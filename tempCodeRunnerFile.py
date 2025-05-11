@@ -50,9 +50,7 @@ def add_action():
                 if response.status_code == 200:
                     data = response.json()
                     emotion = data.get("emotion", "Duygu algılanamadı")
-                    all_emotions = data.get("emotions", {})
-                    formatted_emotions = "\n".join([f"{k}: {round(v, 2)}%" for k, v in all_emotions.items()])
-                    messagebox.showinfo("Duygu Analizi", f"Algılanan duygu: {emotion}\n\nTüm oranlar:\n{formatted_emotions}")
+                    messagebox.showinfo("Duygu Analizi", f"Algılanan duygu: {emotion}")
                 else:
                     messagebox.showerror("Hata", f"Sunucu hatası: {response.status_code}")
         except Exception as e:
@@ -142,7 +140,7 @@ bookmark_btn = tk.Label(bottom_bar, text="🔖", font=("Arial", 14), bg=bg_color
 bookmark_btn.pack(side="left", padx=20)
 bookmark_btn.bind("<Button-1>", lambda e: open_bookmarks())
 
-like_btn = tk.Label(bottom_bar, text="❤", font=("Arial", 14), bg=bg_color, fg=accent_color, cursor="hand2")
+like_btn = tk.Label(bottom_bar, text="❤️", font=("Arial", 14), bg=bg_color, fg=accent_color, cursor="hand2")
 like_btn.pack(side="left", padx=20)
 like_btn.bind("<Button-1>", lambda e: open_likes())
 
