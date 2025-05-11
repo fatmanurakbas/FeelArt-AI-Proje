@@ -1,0 +1,19 @@
+# Sanal ortam klasörü
+venv/
+
+# Python önbellekleri
+__pycache__/
+*.py[cod]
+
+# IDE ayar dosyaları
+.vscode/
+.idea/
+
+# Derleme/çıktı klasörleri
+build/
+dist/
+*.egg-info/
+
+# Gereksiz sistem dosyaları
+.DS_Store
+Thumbs.db
