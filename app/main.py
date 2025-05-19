@@ -1,6 +1,10 @@
 import tkinter as tk
+import ttkbootstrap as ttk
+from ttkbootstrap.style import Style
+print(Style().theme_names())  # Temaları yazdırır
 
 # Ekranları screens klasöründen import et
+
 from screens.login import LoginScreen
 from screens.loginpanel import LoginPanelScreen
 from screens.signup_screen import SignupScreen
@@ -13,11 +17,12 @@ from screens.gallery import GalleryScreen
 
 
 
-class App(tk.Tk):
+
+class App(ttk.Window):
     def __init__(self):
-        super().__init__()
+        super().__init__(themename="flatly")
         self.title("FeelArt")
-        self.geometry("280x580")
+        self.geometry("320x580")
         self.frames = {}
 
         # Tüm ekranları başlat ve sözlüğe ekle

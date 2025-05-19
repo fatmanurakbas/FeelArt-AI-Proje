@@ -1,71 +1,55 @@
-import tkinter as tk
+import ttkbootstrap as ttk
+from ttkbootstrap.constants import *
 from tkinter import messagebox
 
-class ProfileScreen(tk.Frame):
+class ProfileScreen(ttk.Frame):
     def __init__(self, master, controller):
-        super().__init__(master, bg="#fffbe9")
+        super().__init__(master, padding=20)
         self.controller = controller
 
-        text_color = "#b4462b"
-        btn_color = "#eba94d"
-        btn_text = "black"
 
-        # Üst ikonlar
-        top_frame = tk.Frame(self, bg="#fffbe9")
-        top_frame.pack(fill="x", padx=10, pady=(5, 10))
+        self.name = ttk.StringVar(value="Miranda West")
+        self.email = ttk.StringVar(value="miranda@example.com")
 
-        back_btn = tk.Label(top_frame, text="←", font=("Arial", 12), bg="#fffbe9", fg=text_color, cursor="hand2")
-        back_btn.pack(side="left")
-        back_btn.bind("<Button-1>", lambda e: controller.show_frame("MainScreen"))
+        ttk.Label(self, text="Profile", font=("Helvetica", 16, "bold"), bootstyle="dark").pack(pady=(0, 20))
 
-        share_btn = tk.Label(top_frame, text="⇪", font=("Arial", 12), bg="#fffbe9", fg=text_color, cursor="hand2")
-        share_btn.pack(side="right")
+        # Kartlar
+        profile_card = ttk.Labelframe(self, text="User Info", padding=10, bootstyle="info")
+        profile_card.pack(fill="x", pady=10)
 
-        # Kullanıcı simgesi
-        avatar = tk.Canvas(self, width=120, height=120, bg="#f0d58c", highlightthickness=0)
-        avatar.create_oval(20, 20, 100, 100, fill="#f0d58c", outline="#f0d58c")
-        avatar.create_oval(45, 35, 75, 65, fill="#fffbe9", outline=text_color)
-        avatar.create_arc(40, 70, 80, 100, start=0, extent=180, style="arc", outline=text_color, width=3)
-        avatar.pack()
+        ttk.Label(profile_card, text="Name:", font=("Arial", 10)).pack(anchor="w")
+        ttk.Entry(profile_card, textvariable=self.name, width=30).pack(fill="x", pady=(0, 10))
 
-        # İsim & düzenleme
-        name_label = tk.Label(self, text="Name-Surname", font=("Arial", 10, "bold"), bg="#fffbe9", fg="black")
-        name_label.pack(pady=(10, 5))
+        ttk.Label(profile_card, text="Email:", font=("Arial", 10)).pack(anchor="w")
+        ttk.Entry(profile_card, textvariable=self.email, width=30).pack(fill="x")
 
-        edit_btn = tk.Button(self, text="edit profile", command=self.edit_profile, font=("Arial", 9), bg=btn_color, fg=btn_text, bd=1, relief="ridge", width=12)
-        edit_btn.pack()
+        ttk.Button(profile_card, text="Save Profile", bootstyle="success-outline", command=self.save_profile).pack(pady=10)
 
-        # Bilgi alanları
-        info_frame = tk.Frame(self, bg="#fffbe9")
-        info_frame.pack(pady=20, anchor="w", padx=30)
+        settings_card = ttk.Labelframe(self, text="Settings", padding=10, bootstyle="secondary")
+        settings_card.pack(fill="x", pady=10)
 
-        infos = [
-            ("e -posta:", ""),
-            ("change password:", ""),
-            ("language:", ""),
-            ("delete history:", "")
-        ]
-
-        for label, _ in infos:
-            tk.Label(info_frame, text=label, font=("Arial", 9, "italic"), fg="black", bg="#fffbe9").pack(anchor="w", pady=5)
+        ttk.Button(settings_card, text="Change Password", bootstyle="light", command=self.change_password).pack(fill="x", pady=5)
+        ttk.Button(settings_card, text="Language", bootstyle="light", command=self.change_language).pack(fill="x", pady=5)
+        ttk.Button(settings_card, text="Clear History", bootstyle="danger-outline", command=self.clear_history).pack(fill="x", pady=5)
 
         # Alt butonlar
-        bottom_frame = tk.Frame(self, bg="#fffbe9")
-        bottom_frame.pack(side="bottom", fill="x", pady=15, padx=15)
+        bottom_frame = ttk.Frame(self)
+        bottom_frame.pack(fill="x", pady=20)
 
-        change_account_btn = tk.Button(bottom_frame, text="change\naccount", command=self.change_account, font=("Arial", 8, "bold"),
-                                       bg=btn_color, fg=btn_text, bd=1, relief="ridge", width=10, height=2)
-        change_account_btn.pack(side="left")
+        ttk.Button(bottom_frame, text="Logout", bootstyle="danger", command=self.exit_app).pack(side="right", padx=10)
+        ttk.Button(bottom_frame, text="Home", bootstyle="info", command=lambda: self.controller.show_frame("MainScreen")).pack(side="left", padx=10)
 
-        exit_btn = tk.Button(bottom_frame, text="exit", command=self.exit_app, font=("Arial", 8, "bold"),
-                             bg=btn_color, fg=btn_text, bd=1, relief="ridge", width=10, height=2)
-        exit_btn.pack(side="right")
+    def save_profile(self):
+        messagebox.showinfo("Success", f"Saved profile:\nName: {self.name.get()}\nEmail: {self.email.get()}")
 
-    def edit_profile(self):
-        messagebox.showinfo("Profil Düzenle", "Profil düzenleme ekranı (örnek)")
+    def change_password(self):
+        messagebox.showinfo("Password", "Change password clicked")
 
-    def change_account(self):
-        self.controller.show_frame("LoginScreen")
+    def change_language(self):
+        messagebox.showinfo("Language", "Language settings opened")
+
+    def clear_history(self):
+        messagebox.showinfo("History", "Browsing history cleared")
 
     def exit_app(self):
         self.controller.quit()
