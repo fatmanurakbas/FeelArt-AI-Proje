@@ -7,6 +7,7 @@ from PIL import Image, ImageTk
 import requests
 import io
 import json
+from services.tmdb import get_movies_by_emotion
 
 
 
@@ -50,6 +51,12 @@ def add_action():
                 if response.status_code == 200:
                     data = response.json()
                     emotion = data.get("emotion", "Duygu algılanamadı")
+                    movies = get_movies_by_emotion(emotion)
+                    if movies:
+                        öneriler = "\n\n".join([f"{m['title']}\n{m.get('overview', '')[:100]}..." for m in movies])
+                        messagebox.showinfo("Film Önerileri", f"{emotion.upper()} olduğun için sana şunları öneriyorum:\n\n{öneriler}")
+                    else:
+                        messagebox.showerror("Hata", "Film önerileri alınamadı.")   
                     all_emotions = data.get("emotions", {})
                     formatted_emotions = "\n".join([f"{k}: {round(v, 2)}%" for k, v in all_emotions.items()])
                     messagebox.showinfo("Duygu Analizi", f"Algılanan duygu: {emotion}\n\nTüm oranlar:\n{formatted_emotions}")
