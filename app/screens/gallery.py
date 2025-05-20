@@ -12,10 +12,11 @@ class GalleryScreen(tk.Frame):
         self.images = []
         self.saved_images = []
         self.liked_images = []
-        self.create_widgets()
+        self.create_scrollable_widgets()
         self.fetch_images()
 
-    def create_widgets(self):
+    def create_scrollable_widgets(self):
+        # Üst kısım (başlık ve geri tuşu)
         top_frame = tk.Frame(self, bg="#fffbe9")
         top_frame.pack(fill="x", pady=5)
 
@@ -29,18 +30,30 @@ class GalleryScreen(tk.Frame):
         )
         title.pack(side="left", expand=True)
 
-        # Scroll alanı
+        # Canvas + scrollbar + iç frame
         self.canvas = tk.Canvas(self, bg="#fffbe9", highlightthickness=0)
         self.scroll_y = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
-        self.frame = tk.Frame(self.canvas, bg="#fffbe9")
-
-        self.canvas.create_window((0, 0), window=self.frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scroll_y.set)
 
-        self.canvas.pack(side="left", fill="both", expand=True)
         self.scroll_y.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
 
-        self.frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.inner_frame = tk.Frame(self.canvas, bg="#fffbe9")
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
+
+        # İçeriği canvas'a göre genişlet
+        def on_canvas_configure(event):
+            self.canvas.itemconfig(self.canvas_window, width=event.width)
+        self.canvas.bind("<Configure>", on_canvas_configure)
+
+        # Scroll bölgesini güncelle
+        self.inner_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+
+        # Mouse scroll desteği
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
+    def _on_mousewheel(self, event):
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def fetch_images(self):
         try:
@@ -64,14 +77,13 @@ class GalleryScreen(tk.Frame):
             photo = ImageTk.PhotoImage(img)
             self.images.append(photo)
 
-            container = tk.Frame(self.frame, bg="#fffbe9")
+            container = tk.Frame(self.inner_frame, bg="#fffbe9")
             container.pack(pady=10)
 
             img_label = tk.Label(container, image=photo, bg="#fffbe9")
             img_label.image = photo
             img_label.pack()
 
-            # Butonlar
             btn_frame = tk.Frame(container, bg="#fffbe9")
             btn_frame.pack(pady=2)
 
@@ -88,7 +100,7 @@ class GalleryScreen(tk.Frame):
             save_btn.pack(side="left", padx=5)
 
         except Exception as e:
-            tk.Label(self.frame, text=f"Hata: {e}", bg="#fffbe9", fg="red").pack()
+            tk.Label(self.inner_frame, text=f"Hata: {e}", bg="#fffbe9", fg="red").pack()
 
     def save_image(self, url):
         if url not in self.saved_images:

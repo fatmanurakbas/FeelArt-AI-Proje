@@ -39,7 +39,7 @@ class LoginPanelScreen(tk.Frame):
         email = self.entry_email.get()
         password = self.entry_pass.get()
 
-        if email == "test@test.com" and password == "1234":
+        if email == "a@a.com" and password == "1":
            self.controller.show_frame("MainScreen")
         else:
             messagebox.showerror("Hata", "Geçersiz e-posta ya da şifre.")
