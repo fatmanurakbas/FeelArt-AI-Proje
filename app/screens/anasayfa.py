@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import messagebox
 import json
 from screens.gallery import GalleryScreen
+import requests
+
 
 class MainScreen(tk.Frame):
     def __init__(self, master, controller):
@@ -54,6 +56,10 @@ class MainScreen(tk.Frame):
 
         tk.Button(self.main_frame, text="Galeri Oluştur", bg="#f5e2a9", fg=text_color,
                   command=self.add_action, font=("Arial", 11)).pack(pady=10)
+        
+        tk.Button(self.main_frame, text="Film Öner", bg="#f5e2a9", fg=text_color,
+          command=self.get_recommendations, font=("Arial", 11)).pack(pady=(0, 20))
+
 
         # Alt Navigasyon
         bottom_nav = tk.Frame(self.main_frame, bg=bg_color)
@@ -137,7 +143,7 @@ class MainScreen(tk.Frame):
         self.controller.frames["GalleryScreen"] = gallery_screen
         self.controller.show_frame("GalleryScreen")
 
-                # İsteğe bağlı: geçmişi güncelle (aynı şey üstte olsun)
+        # İsteğe bağlı: geçmişi güncelle (aynı şey üstte olsun)
         try:
             with open("user_data.json", "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -158,3 +164,57 @@ class MainScreen(tk.Frame):
 
         self.load_history()
 
+    # anasayfa.py içindeki get_recommendations metodu
+    def get_recommendations(self):
+        emotion_text = self.search_entry.get().strip()
+        if not emotion_text:
+            messagebox.showwarning("Uyarı", "Lütfen bir duygu durumu girin.")
+            return
+
+        try:
+            # Backend API endpoint'i
+            response = requests.get("http://127.0.0.1:5000/api/recommendations", params={"emotion": emotion_text})
+            response.raise_for_status()  # HTTP 4xx veya 5xx hatalarında exception fırlatır
+            data = response.json()
+        except requests.exceptions.ConnectionError as e:
+            messagebox.showerror("Hata", f"API sunucusuna bağlanılamadı.\nSunucunun çalıştığından emin olun.\n{e}")
+            return
+        except requests.exceptions.Timeout as e:
+            messagebox.showerror("Hata", f"API isteği zaman aşımına uğradı.\n{e}")
+            return
+        except requests.exceptions.HTTPError as e:
+            # API'den gelen hata mesajını göstermeye çalışalım (eğer JSON ise)
+            try:
+                error_data = response.json()
+                api_error_message = error_data.get('error', 'Detay yok')
+                messagebox.showerror("Hata", f"API Hatası (HTTP {response.status_code}): {api_error_message}\n{e}")
+            except json.JSONDecodeError:
+                messagebox.showerror("Hata", f"API Hatası (HTTP {response.status_code}).\nYanıt: {response.text}\n{e}")
+            return
+        except json.JSONDecodeError as e: # Yanıt JSON değilse
+            messagebox.showerror("Hata", f"API'den gelen yanıt okunamadı (JSON formatında değil).\nYanıt: {response.text}\n{e}")
+            return
+        except Exception as e: # Diğer beklenmedik hatalar
+            messagebox.showerror("Hata", f"Beklenmedik bir hata oluştu.\n{e}")
+            return
+
+        if 'recommendations' not in data or not data['recommendations']:
+            # API'den boş liste veya 'message' geliyorsa onu da gösterebiliriz
+            info_message = data.get('message', "Uygun film önerisi bulunamadı.")
+            messagebox.showinfo("Bilgi", info_message)
+            return
+
+        recommendations = data['recommendations']
+        self.show_recommendations_popup(recommendations)
+
+
+    def show_recommendations_popup(self, recommendations):
+        popup = tk.Toplevel(self)
+        popup.title("Film Önerileri")
+        popup.configure(bg="#fffbe9")
+
+        for movie in recommendations:
+            title = movie['title']
+            overview = movie['overview']
+            tk.Label(popup, text=title, font=("Arial", 11, "bold"), bg="#fffbe9", fg="#b4462b").pack(anchor="w", padx=10, pady=(10, 0))
+            tk.Label(popup, text=overview, wraplength=400, justify="left", bg="#fffbe9").pack(anchor="w", padx=10)

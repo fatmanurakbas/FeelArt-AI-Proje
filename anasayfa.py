@@ -9,6 +9,8 @@ import io
 import json
 from services.tmdb import get_movies_by_emotion
 
+film_listbox = None #başlangıçta boş
+
 
 
 def center_window(window, width=280, height=580):
@@ -41,6 +43,9 @@ def search_action():
     keyword = search_entry.get()
     messagebox.showinfo("Arama", f"'{keyword}' ile arama yapılıyor...")
 
+
+    
+
 def add_action():
     file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg *.jpeg *.png")])
     if file_path:
@@ -54,7 +59,13 @@ def add_action():
                     movies = get_movies_by_emotion(emotion)
                     if movies:
                         öneriler = "\n\n".join([f"{m['title']}\n{m.get('overview', '')[:100]}..." for m in movies])
-                        messagebox.showinfo("Film Önerileri", f"{emotion.upper()} olduğun için sana şunları öneriyorum:\n\n{öneriler}")
+                        recommendation_label.config(text=f"{emotion.upper()} olduğun için sana şunları öneriyorum:\n\n{öneriler}")
+
+                        # Film listesini GUI'de göster
+                        film_listbox.delete(0, tk.END)
+                        for movie in movies:
+                            film_listbox.insert(tk.END, movie["title"])
+
                     else:
                         messagebox.showerror("Hata", "Film önerileri alınamadı.")   
                     all_emotions = data.get("emotions", {})
@@ -106,6 +117,16 @@ for item in history_items:
 main_frame = tk.Frame(root, bg=bg_color)
 main_frame.place(x=0, y=0, relwidth=1, relheight=1)
 
+# Film önerilerini göstermek için liste kutusu
+film_listbox = tk.Listbox(main_frame, height=7, font=("Arial", 10))
+film_listbox.pack(pady=10, padx=20, fill="both")
+globals()["film_listbox"] = film_listbox
+
+# Öneri metni gösterilecek alan
+recommendation_label = tk.Label(main_frame, text="", bg=bg_color, fg="black", font=("Arial", 10), justify="left", wraplength=240)
+recommendation_label.pack(pady=10)
+
+
 # Üst bar
 top_bar = tk.Frame(main_frame, bg=bg_color)
 top_bar.pack(fill="x", pady=10, padx=10)
@@ -154,3 +175,6 @@ like_btn.pack(side="left", padx=20)
 like_btn.bind("<Button-1>", lambda e: open_likes())
 
 root.mainloop()
+
+
+
