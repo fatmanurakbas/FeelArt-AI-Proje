@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import json
-from screens.gallery import GalleryScreen
+from screens.gallery import GalleryScreen # Bu satırın doğru yolu gösterdiğinden emin olun
 import requests
 
 
@@ -80,17 +80,48 @@ class MainScreen(tk.Frame):
             self.main_frame.place(x=130, y=0)
         self.sidebar_open = not self.sidebar_open
 
+    def _analyze_emotion(self, text):
+        """
+        Verilen metinden anahtar duygu kelimesini analiz eder ve döndürür.
+        Bu kısım, sizin görsel oluşturma için kullandığınız gerçek duygu analizi mantığını içermelidir.
+        Şu anki implementasyon basit bir anahtar kelime eşleştirmesidir.
+        Daha gelişmiş bir NLP modeli (örn. NLTK, spaCy, TextBlob) veya özel bir duygu sınıflandırma modeli
+        kullanarak daha doğru sonuçlar alabilirsiniz.
+        """
+        text_lower = text.lower()
+        if "üzgün" in text_lower or "mutsuz" in text_lower or "depresif" in text_lower or "hüzünlü" in text_lower:
+            return "üzgün"
+        elif "mutlu" in text_lower or "neşeli" in text_lower or "keyifli" in text_lower or "sevinçli" in text_lower:
+            return "mutlu"
+        elif "kızgın" in text_lower or "sinirli" in text_lower or "öfkeli" in text_lower:
+            return "kızgın"
+        elif "heyecanlı" in text_lower or "enerjik" in text_lower or "coşkulu" in text_lower:
+            return "heyecanlı"
+        elif "korkmuş" in text_lower or "tedirgin" in text_lower or "endişeli" in text_lower:
+            return "korkmuş"
+        elif "şok" in text_lower or "şaşırmış" in text_lower:
+            return "şaşırmış"
+        elif "tiksinti" in text_lower or "iğrenme" in text_lower:
+            return "tiksinti"
+        # Eğer yukarıdaki kelimelerden hiçbiri bulunamazsa
+        return "nötr" # Varsayılan olarak "nötr" döndür
+
     def add_action(self):
         emotion_text = self.search_entry.get().strip()
         if not emotion_text:
             messagebox.showwarning("Uyarı", "Lütfen bir duygu durumu girin.")
             return
 
+        # Geçmişe ekleme ve Galeriye geçme işlemleri
+        # (Bu kısım _analyze_emotion'dan bağımsız olarak çalışabilir,
+        # ancak eğer görsel API'si de tek kelime bekliyorsa
+        # burada da analyzed_emotion kullanmanız gerekebilir)
+
         # === Geçmişe ekle ===
         try:
             with open("user_data.json", "r", encoding="utf-8") as f:
                 data = json.load(f)
-        except:
+        except (FileNotFoundError, json.JSONDecodeError): # JSON dosyası yoksa veya bozuksa
             data = {}
 
         history = data.get("history", [])
@@ -102,16 +133,23 @@ class MainScreen(tk.Frame):
         try:
             with open("user_data.json", "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4)
-        except:
-            pass
+        except Exception as e:
+            messagebox.showerror("Hata", f"Geçmiş kaydedilirken bir hata oluştu: {e}")
 
         self.load_history()
 
         # === Galeriye geç ===
+        # Burada GalleryScreen'e gönderilen emotion_text'in
+        # görsel API'si için analiz edilmiş hali mi yoksa ham hali mi olması gerektiğine
+        # sizin backend'iniz karar verecektir. Genelde ham metin gönderilir ve
+        # backend tarafında analiz yapılır. Ancak eğer frontend'de bu analiz
+        # görsel için de yapılıyorsa, burada da _analyze_emotion çıktısı kullanılabilir.
+        # Şimdilik mevcut haliyle bırakıyorum.
         gallery_screen = GalleryScreen(self.controller, self.controller, emotion_text)
-        gallery_screen.place(relwidth=1, relheight=1)
         self.controller.frames["GalleryScreen"] = gallery_screen
         self.controller.show_frame("GalleryScreen")
+        gallery_screen.place(relwidth=1, relheight=1) # place çağrısını show_frame'den sonra yapın
+
 
         # Chat alanını temizle
         self.search_entry.delete(0, tk.END)
@@ -125,7 +163,7 @@ class MainScreen(tk.Frame):
             with open("user_data.json", "r", encoding="utf-8") as f:
                 data = json.load(f)
                 history_items = data.get("history", [])
-        except:
+        except (FileNotFoundError, json.JSONDecodeError):
             history_items = []
 
         for item in history_items:
@@ -139,15 +177,15 @@ class MainScreen(tk.Frame):
     
     def open_gallery_from_history(self, emotion_text):
         gallery_screen = GalleryScreen(self.controller, self.controller, emotion_text)
-        gallery_screen.place(relwidth=1, relheight=1)
         self.controller.frames["GalleryScreen"] = gallery_screen
         self.controller.show_frame("GalleryScreen")
+        gallery_screen.place(relwidth=1, relheight=1) # place çağrısını show_frame'den sonra yapın
 
         # İsteğe bağlı: geçmişi güncelle (aynı şey üstte olsun)
         try:
             with open("user_data.json", "r", encoding="utf-8") as f:
                 data = json.load(f)
-        except:
+        except (FileNotFoundError, json.JSONDecodeError):
             data = {}
 
         history = data.get("history", [])
@@ -159,23 +197,34 @@ class MainScreen(tk.Frame):
         try:
             with open("user_data.json", "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4)
-        except:
-            pass
+        except Exception as e:
+            messagebox.showerror("Hata", f"Geçmiş güncellenirken bir hata oluştu: {e}")
 
         self.load_history()
 
     # anasayfa.py içindeki get_recommendations metodu
     def get_recommendations(self):
-        emotion_text = self.search_entry.get().strip()
-        if not emotion_text:
+        user_input_text = self.search_entry.get().strip()
+        if not user_input_text:
             messagebox.showwarning("Uyarı", "Lütfen bir duygu durumu girin.")
             return
 
+        # Kullanıcının girdiği metinden anahtar duygu kelimesini analiz et
+        emotion_to_send = self._analyze_emotion(user_input_text)
+        
+        # Eğer analizden geçerli bir duygu çıkmazsa kullanıcıya bilgi ver
+        if not emotion_to_send or emotion_to_send == "nötr":
+             messagebox.showinfo("Bilgi", "Girdiğiniz metinden belirgin bir duygu çıkarılamadı. Lütfen daha net bir ifade kullanın veya doğrudan bir duygu kelimesi girin.")
+             return # Duygu yoksa API çağrısını yapma
+
         try:
             # Backend API endpoint'i
-            response = requests.get("http://127.0.0.1:5000/api/recommendations", params={"emotion": emotion_text})
+            # Analiz edilmiş tek kelimelik duygu durumunu API'ye gönderiyoruz
+            response = requests.get("http://127.0.0.1:5000/api/recommendations", params={"emotion": emotion_to_send})
             response.raise_for_status()  # HTTP 4xx veya 5xx hatalarında exception fırlatır
             data = response.json()
+            print("API'den gelen yanıt (Film Öneri):", data) # Hata ayıklama için konsola yazdır
+
         except requests.exceptions.ConnectionError as e:
             messagebox.showerror("Hata", f"API sunucusuna bağlanılamadı.\nSunucunun çalıştığından emin olun.\n{e}")
             return
@@ -183,12 +232,11 @@ class MainScreen(tk.Frame):
             messagebox.showerror("Hata", f"API isteği zaman aşımına uğradı.\n{e}")
             return
         except requests.exceptions.HTTPError as e:
-            # API'den gelen hata mesajını göstermeye çalışalım (eğer JSON ise)
             try:
                 error_data = response.json()
                 api_error_message = error_data.get('error', 'Detay yok')
                 messagebox.showerror("Hata", f"API Hatası (HTTP {response.status_code}): {api_error_message}\n{e}")
-            except json.JSONDecodeError:
+            except json.JSONDecodeError: # API'den gelen yanıt JSON değilse
                 messagebox.showerror("Hata", f"API Hatası (HTTP {response.status_code}).\nYanıt: {response.text}\n{e}")
             return
         except json.JSONDecodeError as e: # Yanıt JSON değilse
@@ -198,9 +246,9 @@ class MainScreen(tk.Frame):
             messagebox.showerror("Hata", f"Beklenmedik bir hata oluştu.\n{e}")
             return
 
+        # 'recommendations' anahtarı yoksa veya boşsa
         if 'recommendations' not in data or not data['recommendations']:
-            # API'den boş liste veya 'message' geliyorsa onu da gösterebiliriz
-            info_message = data.get('message', "Uygun film önerisi bulunamadı.")
+            info_message = data.get('message', "Girdiğiniz duygu için uygun film önerisi bulunamadı.")
             messagebox.showinfo("Bilgi", info_message)
             return
 
@@ -212,9 +260,64 @@ class MainScreen(tk.Frame):
         popup = tk.Toplevel(self)
         popup.title("Film Önerileri")
         popup.configure(bg="#fffbe9")
+        popup.transient(self.master) # Ana pencere üzerinde kalmasını sağlar
+        popup.grab_set() # Ana pencere etkileşimini engeller
+        popup.resizable(False, False) # Boyutlandırmayı kapat
 
-        for movie in recommendations:
-            title = movie['title']
-            overview = movie['overview']
-            tk.Label(popup, text=title, font=("Arial", 11, "bold"), bg="#fffbe9", fg="#b4462b").pack(anchor="w", padx=10, pady=(10, 0))
-            tk.Label(popup, text=overview, wraplength=400, justify="left", bg="#fffbe9").pack(anchor="w", padx=10)
+        # Scrollbar için bir canvas ve frame oluşturun
+        canvas = tk.Canvas(popup, bg="#fffbe9")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        scrollbar = tk.Scrollbar(popup, orient="vertical", command=canvas.yview)
+        scrollbar.pack(side="right", fill="y")
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+        # canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion = canvas.bbox("all")))
+        # Yukarıdaki satırı kaldırıp aşağıdaki daha kontrollü mekanizmayı kullanacağız
+
+        # Önerileri göstermek için frame
+        # canvas.create_window'u daha sonra, canvas'ın genişliğini bildiğimizde çağıracağız.
+        recommendations_frame = tk.Frame(canvas, bg="#fffbe9")
+        
+        # Bu window_id'yi saklayalım ki daha sonra güncelleyebilelim
+        window_id = canvas.create_window((0, 0), window=recommendations_frame, anchor="nw")
+
+        # recommendations_frame'in boyutunu güncellediğinde canvas'ın scrollregion'ını güncelleyin
+        recommendations_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+        # Canvas'ın boyutu değiştiğinde, recommendations_frame'in genişliğini canvas'ın genişliğine eşitle
+        def _on_canvas_configure(event):
+            canvas.itemconfig(window_id, width=event.width)
+            canvas.configure(scrollregion=canvas.bbox("all")) # Her boyutta scrollregion'ı güncelleyin
+        canvas.bind('<Configure>', _on_canvas_configure)
+
+
+        if not recommendations: # Eğer boş liste geldiyse
+            tk.Label(recommendations_frame, text="Bu duyguya uygun film önerisi bulunamadı.",
+                     bg="#fffbe9", fg="#b4462b", font=("Arial", 11)).pack(padx=10, pady=10)
+        else:
+            for movie in recommendations:
+                title = movie.get('title', 'Başlık Bilinmiyor')
+                overview = movie.get('overview', 'Açıklama Bilinmiyor')
+                
+                tk.Label(recommendations_frame, text=title, font=("Arial", 11, "bold"), bg="#fffbe9", fg="#b4462b").pack(anchor="w", padx=10, pady=(10, 0))
+                tk.Label(recommendations_frame, text=overview, wraplength=400, justify="left", bg="#fffbe9").pack(anchor="w", padx=10)
+                tk.Frame(recommendations_frame, height=1, bg="#f0d58c").pack(fill="x", padx=10, pady=5) # Ayırıcı çizgi
+
+        # Tüm widget'lar yerleştirildikten sonra pop-up'ı ve canvas'ı güncelleyin
+        # Bu kritik bir adımdır!
+        popup.update_idletasks() # Pop-up'ın içindeki widget'ların boyutlarını ve yerleşimlerini güncelleyin
+        canvas.configure(scrollregion=canvas.bbox("all")) # Scrollbarı doğru ayarlamak için son kez güncelleyin
+
+
+        # Pop-up kapatılınca odak ana pencereye geri dönsün
+        popup.protocol("WM_DELETE_WINDOW", lambda: self.close_popup_and_release_grab(popup))
+        
+        # İlk açıldığında recommendations_frame'in genişliğini canvas'a eşitlemek için
+        # küçük bir gecikmeyle çağrı yapabiliriz veya _on_canvas_configure'un çağrılmasını bekleyebiliriz.
+        # Genellikle _on_canvas_configure ilk boyutlandırmada da tetiklenir.
+
+    def close_popup_and_release_grab(self, popup):
+        if popup.winfo_exists(): # Pencere hala mevcutsa
+            popup.grab_release()
+            popup.destroy()
