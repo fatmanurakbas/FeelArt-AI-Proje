@@ -3,6 +3,7 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 import requests
 import io
+import uuid
 
 class GalleryScreen(tk.Frame):
     def __init__(self, master, controller, emotion_text="mutlu"):
@@ -25,7 +26,7 @@ class GalleryScreen(tk.Frame):
         back_btn.pack(side="left", padx=10)
 
         title = tk.Label(
-            top_frame, text=f"'{self.emotion}' için sanat önerileri 🎨",
+            top_frame, text=f"'{self.emotion}' için sanat önerileri",
             font=("Arial", 12, "bold"), bg="#fffbe9", fg="#b4462b", wraplength=250, justify="center"
         )
         title.pack(side="left", expand=True)
@@ -57,7 +58,10 @@ class GalleryScreen(tk.Frame):
 
     def fetch_images(self):
         try:
-            response = requests.get(f"http://127.0.0.1:5000/api/images?query={self.emotion}")
+            response = requests.get(
+                "http://127.0.0.1:8000/api/images",
+                 params={"query": self.emotion, "seed": str(uuid.uuid4())}
+            )
             if response.status_code == 200:
                 data = response.json()
                 image_urls = data.get('images', [])
@@ -94,7 +98,7 @@ class GalleryScreen(tk.Frame):
             like_btn.pack(side="left", padx=5)
 
             save_btn = tk.Button(
-                btn_frame, text="🔖 Kaydet", bg="#fffbe9", fg="#b4462b", font=("Arial", 9, "bold"), bd=0,
+                btn_frame, text="🔖", bg="#fffbe9", fg="#b4462b", font=("Arial", 9, "bold"), bd=0,
                 command=lambda u=url: self.save_image(u)
             )
             save_btn.pack(side="left", padx=5)

@@ -19,7 +19,7 @@ class BookmarksScreen(tk.Frame):
                              command=lambda: self.controller.show_frame("MainScreen"))
         back_btn.pack(side="left", padx=10, pady=5)
 
-        title = tk.Label(top_frame, text="📌 Kaydedilen Görseller", font=("Arial", 14, "bold"), bg="#fffbe9", fg="#b4462b")
+        title = tk.Label(top_frame, text="Kaydedilen Görseller", font=("Arial", 14, "bold"), bg="#fffbe9", fg="#b4462b")
         title.pack(side="left", pady=10)
 
         self.canvas = tk.Canvas(self, bg="#fffbe9", highlightthickness=0)

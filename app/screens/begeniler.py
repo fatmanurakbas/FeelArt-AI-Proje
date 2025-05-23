@@ -15,7 +15,7 @@ class LikesScreen(tk.Frame):
         top_frame = tk.Frame(self, bg="#fffbe9")
         top_frame.pack(fill="x")
 
-        title = tk.Label(top_frame, text="❤️ Beğenilen Görseller", font=("Arial", 14, "bold"), bg="#fffbe9", fg="#b4462b")
+        title = tk.Label(top_frame, text="Beğenilen Görseller", font=("Arial", 14, "bold"), bg="#fffbe9", fg="#b4462b")
         title.pack(pady=10)
 
         back_btn = tk.Button(top_frame, text="←", bg="#fffbe9", fg="#b4462b",
