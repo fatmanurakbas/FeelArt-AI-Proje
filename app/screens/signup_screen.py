@@ -1,70 +1,131 @@
-import tkinter as tk
-from tkinter import messagebox, font
+from PyQt5 import QtWidgets, QtGui, QtCore
+import sys
+import os
+import subprocess
 
-class SignupScreen(tk.Frame):
-    def __init__(self, master, controller):
-        super().__init__(master, bg="#fceeff")  # Soft pastel mor arka plan
-        self.controller = controller
+class KayitEkrani(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("FeelArt | Kayıt Ol")
+        self.setFixedSize(420, 560)
 
-        # Geri butonu (sol üstte ok)
-        tk.Button(self, text="←", font=("Arial", 14), bg="#fceeff", fg="#6a4e76",
-                  bd=0, command=lambda: controller.show_frame("LoginScreen")).pack(anchor="w", padx=10, pady=(10, 0))
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        bg_path = os.path.join(current_dir, "FeelArt.png")
+
+        if not os.path.exists(bg_path):
+            QtWidgets.QMessageBox.critical(self, "HATA", f"Görsel bulunamadı:\n{bg_path}")
+            sys.exit()
+
+        self.bg_label = QtWidgets.QLabel(self)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 560)
+
+        self.form = QtWidgets.QWidget(self)
+        self.form.setGeometry(40, 100, 340, 380)
+        self.form.setStyleSheet("background-color: rgba(255, 255, 255, 160); border-radius: 20px;")
+
+        layout = QtWidgets.QVBoxLayout(self.form)
+        layout.setSpacing(15)
 
         # Başlık
+        title = QtWidgets.QLabel("Kayıt Ol")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        title.setStyleSheet("""
+            font-size: 38px;
+            font-weight: bold;
+            font-style: italic;
+            color: #7b4caf;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+        """)
+        layout.addWidget(title)
+
+        # Ad alanı
+        self.ad = QtWidgets.QLineEdit()
+        self.ad.setPlaceholderText("Ad Soyad")
+        self.ad.setStyleSheet(self.input_style())
+        layout.addWidget(self.ad)
+
+        # E-posta alanı
+        self.email = QtWidgets.QLineEdit()
+        self.email.setPlaceholderText("E-posta")
+        self.email.setStyleSheet(self.input_style())
+        layout.addWidget(self.email)
+
+        # Şifre alanı
+        self.sifre = QtWidgets.QLineEdit()
+        self.sifre.setPlaceholderText("Şifre")
+        self.sifre.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.sifre.setStyleSheet(self.input_style())
+        layout.addWidget(self.sifre)
+
+        # Kayıt butonu
+        kayit = QtWidgets.QPushButton("Kayıt Ol")
+        kayit.setStyleSheet(self.button_style())
+        kayit.clicked.connect(self.kayit_ol)
+        layout.addWidget(kayit)
+
+        # Giriş bağlantısı
+        giris = QtWidgets.QPushButton("Zaten hesabın var mı? Giriş yap")
+        giris.setCursor(QtCore.Qt.PointingHandCursor)
+        giris.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+                color: #7b4caf;
+                font-size: 12px;
+                font-style: italic;
+                text-decoration: underline;
+            }
+            QPushButton:hover {
+                color: #9c6de4;
+            }
+        """)
+        giris.clicked.connect(self.giris_ekranina_don)
+        layout.addWidget(giris, alignment=QtCore.Qt.AlignCenter)
+
+    def input_style(self):
+        return """
+            QLineEdit {
+                background-color: rgba(255, 255, 255, 220);
+                border: none;
+                border-radius: 15px;
+                padding: 10px;
+                font-size: 14px;
+                color: #4d3f63;
+            }
+        """
+
+    def button_style(self):
+        return """
+            QPushButton {
+                background-color: #a782e6;
+                color: white;
+                border: none;
+                border-radius: 18px;
+                padding: 10px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #9d6de0;
+            }
+        """
+
+    def kayit_ol(self):
+        if not self.ad.text() or not self.email.text() or not self.sifre.text():
+            QtWidgets.QMessageBox.warning(self, "Hata", "Lütfen tüm alanları doldurun.")
+        else:
+            QtWidgets.QMessageBox.information(self, "Başarılı", "Kayıt başarılı!")
+
+    def giris_ekranina_don(self):
         try:
-            title_font = font.Font(family="Segoe UI", size=20, weight="bold")
-        except:
-            title_font = ("Arial", 20, "bold")
+            subprocess.Popen(["python", "login.py"])
+            self.close()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "HATA", f"Giriş ekranı açılamadı:\n{e}")
 
-        tk.Label(self, text="Hesap Oluştur", font=title_font, fg="#843b62", bg="#fceeff").pack(pady=(10, 20))
-
-        # Form alanları
-        self.entry_name = self.create_input("Ad Soyad")
-        self.entry_email = self.create_input("Email")
-        self.entry_password = self.create_input("Şifre (min. 8 karakter)", show="*")
-
-        # Kayıt Ol Butonu
-        tk.Button(self, text="Kayıt Ol", font=("Arial", 11, "bold"), bg="#c97fd9",
-                  fg="white", activebackground="#b064c2", width=28, height=2,
-                  bd=0, relief="flat", cursor="hand2", command=self.submit_signup).pack(pady=20)
-
-        # Alternatif kayıtlar (örn. sosyal medya)
-        tk.Label(self, text="veya", bg="#fceeff", fg="#7e5e91", font=("Arial", 10, "italic")).pack()
-
-        self.create_social_button("Facebook ile Kayıt Ol", "facebook")
-        self.create_social_button("Apple ile Kayıt Ol", "apple")
-
-        # Giriş linki
-        tk.Label(self, text="Zaten hesabın var mı?", font=("Arial", 9),
-                 bg="#fceeff", fg="#6a4e76").pack(pady=(20, 0))
-        tk.Button(self, text="Giriş Yap", font=("Arial", 9, "underline"),
-                  fg="#843b62", bg="#fceeff", bd=0,
-                  command=lambda: controller.show_frame("LoginScreen"), cursor="hand2").pack()
-
-    def create_input(self, placeholder, show=None):
-        entry = tk.Entry(self, font=("Arial", 10), bg="#f9f4fd", fg="#333",
-                         width=30, bd=1, relief="solid", show=show)
-        entry.insert(0, placeholder)
-        entry.bind("<FocusIn>", lambda event, e=entry, p=placeholder: self.on_focus_in(e, p))
-        entry.bind("<FocusOut>", lambda event, e=entry, p=placeholder: self.on_focus_out(e, p))
-        entry.pack(pady=5, ipady=6)
-        return entry
-
-    def on_focus_in(self, entry, placeholder):
-        if entry.get() == placeholder:
-            entry.delete(0, tk.END)
-            entry.config(fg="#000")
-
-    def on_focus_out(self, entry, placeholder):
-        if entry.get() == "":
-            entry.insert(0, placeholder)
-            entry.config(fg="#999")
-
-    def create_social_button(self, text, platform):
-        tk.Button(self, text=text, font=("Arial", 10, "bold"),
-                  bg="white", fg="#4a2c4c", width=28, height=2,
-                  bd=1, relief="solid", cursor="hand2").pack(pady=8)
-
-    def submit_signup(self):
-        messagebox.showinfo("Kayıt Olundu", "Kayıt işlemi başarıyla tamamlandı!")
-        self.controller.show_frame("LoginScreen")
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    pencere = KayitEkrani()
+    pencere.show()
+    sys.exit(app.exec_())
