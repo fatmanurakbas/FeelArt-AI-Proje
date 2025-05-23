@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 import sys
 import os
+import subprocess
 
 class LoginEkrani(QtWidgets.QWidget):
     def __init__(self):
@@ -8,7 +9,6 @@ class LoginEkrani(QtWidgets.QWidget):
         self.setWindowTitle("FeelArt | Giriş")
         self.setFixedSize(420, 560)
 
-        # 🔗 Arka plan dosya yolu
         current_dir = os.path.dirname(os.path.abspath(__file__))
         bg_path = os.path.join(current_dir, "FeelArt.png")
 
@@ -16,20 +16,17 @@ class LoginEkrani(QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(self, "HATA", f"Görsel bulunamadı:\n{bg_path}")
             sys.exit()
 
-        # 🎨 Arka plan
         self.bg_label = QtWidgets.QLabel(self)
         self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
         self.bg_label.setGeometry(0, 0, 420, 560)
 
-        # 📦 Form kutusu
         self.form = QtWidgets.QWidget(self)
-        self.form.setGeometry(40, 120, 340, 300)
+        self.form.setGeometry(40, 110, 340, 340)
         self.form.setStyleSheet("background-color: rgba(255, 255, 255, 160); border-radius: 20px;")
 
         layout = QtWidgets.QVBoxLayout(self.form)
         layout.setSpacing(15)
 
-        # 🌟 FeelArt başlık (büyük & italik)
         title = QtWidgets.QLabel("FeelArt")
         title.setAlignment(QtCore.Qt.AlignCenter)
         title.setStyleSheet("""
@@ -41,24 +38,40 @@ class LoginEkrani(QtWidgets.QWidget):
         """)
         layout.addWidget(title)
 
-        # 📧 E-posta
         self.email = QtWidgets.QLineEdit()
         self.email.setPlaceholderText("E-posta")
         self.email.setStyleSheet(self.input_style())
         layout.addWidget(self.email)
 
-        # 🔒 Şifre
         self.sifre = QtWidgets.QLineEdit()
         self.sifre.setPlaceholderText("Şifre")
         self.sifre.setEchoMode(QtWidgets.QLineEdit.Password)
         self.sifre.setStyleSheet(self.input_style())
         layout.addWidget(self.sifre)
 
-        # 🟣 Giriş Butonu
         giris = QtWidgets.QPushButton("Giriş Yap")
         giris.clicked.connect(self.giris_yap)
         giris.setStyleSheet(self.button_style())
         layout.addWidget(giris)
+
+        # 🌸 Kayıt yazısı (buton gibi)
+        kayit = QtWidgets.QPushButton("Hesabınız yok mu? Kayıt ol")
+        kayit.setCursor(QtCore.Qt.PointingHandCursor)
+        kayit.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+                color: #7b4caf;
+                font-size: 12px;
+                font-style: italic;
+                text-decoration: underline;
+            }
+            QPushButton:hover {
+                color: #9c6de4;
+            }
+        """)
+        kayit.clicked.connect(self.kayit_ekranina_git)
+        layout.addWidget(kayit, alignment=QtCore.Qt.AlignCenter)
 
     def input_style(self):
         return """
@@ -93,6 +106,13 @@ class LoginEkrani(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "Hata", "Lütfen tüm alanları doldurun.")
         else:
             QtWidgets.QMessageBox.information(self, "Başarılı", "Giriş başarılı!")
+
+    def kayit_ekranina_git(self):
+        try:
+            subprocess.Popen(["python", "signup.py"])
+            self.close()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "HATA", f"Kayıt ekranı açılamadı:\n{e}")
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
