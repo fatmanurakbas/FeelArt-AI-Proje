@@ -1,200 +1,159 @@
 import tkinter as tk
+from tkinter import messagebox
 from PIL import Image, ImageTk
 import requests
 from io import BytesIO
 
-# Öneri listeleri
-film_önerileri = [
-    {
-        "isim": "Stranger Things",
-        "ülke": "USA, 2016 - Current",
-        "puan": "8.6 / 10",
-        "görsel": "https://upload.wikimedia.org/wikipedia/en/f/f7/Stranger_Things_season_4.jpg"
-    },
-    {
-        "isim": "Inside Out",
-        "ülke": "USA, 2015",
-        "puan": "8.1 / 10",
-        "görsel": "https://upload.wikimedia.org/wikipedia/en/0/0a/Inside_Out_%282015_film%29_poster.jpg"
-    }
-]
+class OneriPaneliScreen(tk.Frame):
+    def __init__(self, master, controller, emotion):
+        super().__init__(master, bg="#fffbe9")
+        self.controller = controller
+        self.emotion = emotion
+        self.film_index = 0
+        self.kitap_index = 0
+        self.filmler = []
+        self.kitaplar = self.get_kitaplar()
+        self.film_imgtk = None
+        self.kitap_imgtk = None
 
-kitap_önerileri = [
-    {
-        "isim": "The Art of Happiness",
-        "yazar": "Dalai Lama",
-        "görsel": "https://m.media-amazon.com/images/I/41j9pWb6V2L.jpg"
-    },
-    {
-        "isim": "Emotional Intelligence",
-        "yazar": "Daniel Goleman",
-        "görsel": "https://m.media-amazon.com/images/I/41GDikzI7PL.jpg"
-    }
-]
+        self.build_ui()
+        self.load_filmler()
 
-film_index = 0
-kitap_index = 0
-film_begeni = False
-film_kayit = False
-kitap_begeni = False
-kitap_kayit = False
+    def build_ui(self):
+                # ==== Üst Başlık ve Geri Butonu ====
+        top_frame = tk.Frame(self, bg="#fffbe9")
+        top_frame.pack(fill="x", pady=(10, 5), padx=10)
 
-def center_window(window, width=320, height=620):
-    screen_width = window.winfo_screenwidth()
-    screen_height = window.winfo_screenheight()
-    x = 100
-    y = int((screen_height / 2) - (height / 2))
-    window.geometry(f"{width}x{height}+{x}+{y}")
+        back_btn = tk.Label(top_frame, text="← Geri", font=("Arial", 10, "bold"), fg="#b4462b",
+                            bg="#fffbe9", cursor="hand2")
+        back_btn.pack(side="left")
+        back_btn.bind("<Button-1>", lambda e: self.controller.show_frame("MainScreen"))
+        
+        tk.Label(self, text="Film Serisi", font=("Brush Script MT", 18), bg="#f0d58c", fg="#b4462b").pack(fill="x", pady=(10, 5))
 
-# ---- Film Fonksiyonları ----
-def guncelle_film():
-    global film_imgtk
-    film = film_önerileri[film_index]
-    try:
-        response = requests.get(film["görsel"])
-        img = Image.open(BytesIO(response.content)).resize((100, 140))
-        film_imgtk = ImageTk.PhotoImage(img)
-        film_label.config(image=film_imgtk)
-    except:
-        film_label.config(text="[Görsel Yok]", font=("Arial", 10), image="", width=12, height=8)
+        self.film_frame = tk.Frame(self, bg="#fffbe9")
+        self.film_frame.pack()
 
-    film_ad_label.config(text=film["isim"])
-    film_puan_label.config(text=f"IMDb: {film['puan']}")
-    film_ülke_label.config(text=film["ülke"])
-    film_begeni_btn.config(text="❤️" if film_begeni else "🤍")
-    film_kayit_btn.config(text="🔖" if film_kayit else "📑")
+        tk.Button(self.film_frame, text="‹", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0,
+                  command=self.geri_film).pack(side="left", padx=5)
 
-def ileri_film():
-    global film_index
-    film_index = (film_index + 1) % len(film_önerileri)
-    guncelle_film()
+        self.film_content = tk.Frame(self.film_frame, bg="#fffbe9")
+        self.film_content.pack(side="left", pady=10)
 
-def geri_film():
-    global film_index
-    film_index = (film_index - 1) % len(film_önerileri)
-    guncelle_film()
+        self.film_label = tk.Label(self.film_content, bg="#fffbe9")
+        self.film_label.pack()
 
-def toggle_film_begeni():
-    global film_begeni
-    film_begeni = not film_begeni
-    film_begeni_btn.config(text="❤️" if film_begeni else "🤍")
+        self.film_puan_label = tk.Label(self.film_content, font=("Arial", 8), bg="#fffbe9", fg="black")
+        self.film_puan_label.pack()
 
-def toggle_film_kayit():
-    global film_kayit
-    film_kayit = not film_kayit
-    film_kayit_btn.config(text="🔖" if film_kayit else "📑")
+        self.film_ad_label = tk.Label(self.film_content, font=("Arial", 9, "bold"), bg="#fffbe9", fg="black")
+        self.film_ad_label.pack()
 
-# ---- Kitap Fonksiyonları ----
-def guncelle_kitap():
-    global kitap_imgtk
-    kitap = kitap_önerileri[kitap_index]
-    try:
-        response = requests.get(kitap["görsel"])
-        img = Image.open(BytesIO(response.content)).resize((100, 140))
-        kitap_imgtk = ImageTk.PhotoImage(img)
-        kitap_label.config(image=kitap_imgtk)
-    except:
-        kitap_label.config(text="[Görsel Yok]", font=("Arial", 10), image="", width=12, height=8)
+        self.film_button_frame = tk.Frame(self.film_content, bg="#fffbe9")
+        self.film_button_frame.pack(pady=4)
 
-    kitap_ad_label.config(text=kitap["isim"])
-    kitap_yazar_label.config(text=kitap["yazar"])
-    kitap_begeni_btn.config(text="❤️" if kitap_begeni else "🤍")
-    kitap_kayit_btn.config(text="🔖" if kitap_kayit else "📑")
+        tk.Button(self.film_frame, text="›", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0,
+                  command=self.ileri_film).pack(side="left", padx=5)
 
-def ileri_kitap():
-    global kitap_index
-    kitap_index = (kitap_index + 1) % len(kitap_önerileri)
-    guncelle_kitap()
+        # Kitap Serisi
+        tk.Label(self, text="Kitap Serisi", font=("Brush Script MT", 18), bg="#f0d58c", fg="#b4462b").pack(fill="x", pady=(15, 5))
 
-def geri_kitap():
-    global kitap_index
-    kitap_index = (kitap_index - 1) % len(kitap_önerileri)
-    guncelle_kitap()
+        self.kitap_frame = tk.Frame(self, bg="#fffbe9")
+        self.kitap_frame.pack()
 
-def toggle_kitap_begeni():
-    global kitap_begeni
-    kitap_begeni = not kitap_begeni
-    kitap_begeni_btn.config(text="❤️" if kitap_begeni else "🤍")
+        tk.Button(self.kitap_frame, text="‹", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0,
+                  command=self.geri_kitap).pack(side="left", padx=5)
 
-def toggle_kitap_kayit():
-    global kitap_kayit
-    kitap_kayit = not kitap_kayit
-    kitap_kayit_btn.config(text="🔖" if kitap_kayit else "📑")
+        self.kitap_content = tk.Frame(self.kitap_frame, bg="#fffbe9")
+        self.kitap_content.pack(side="left", pady=10)
 
-# ---- Arayüz Başlangıcı ----
-root = tk.Tk()
-center_window(root)
-root.title("Duyguya Göre Öneriler")
-root.configure(bg="#fffbe9")
+        self.kitap_label = tk.Label(self.kitap_content, bg="#fffbe9")
+        self.kitap_label.pack()
 
-# --- Film Serisi ---
-film_baslik = tk.Label(root, text="film serisi", font=("Brush Script MT", 18), bg="#f0d58c", fg="#b4462b")
-film_baslik.pack(fill="x", pady=(0, 5))
+        self.kitap_ad_label = tk.Label(self.kitap_content, font=("Arial", 9, "bold"), bg="#fffbe9", fg="black")
+        self.kitap_ad_label.pack()
 
-film_frame = tk.Frame(root, bg="#fffbe9")
-film_frame.pack()
+        self.kitap_yazar_label = tk.Label(self.kitap_content, font=("Arial", 8), bg="#fffbe9", fg="gray")
+        self.kitap_yazar_label.pack()
 
-tk.Button(film_frame, text="‹", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0, command=geri_film).pack(side="left", padx=5)
+        tk.Button(self.kitap_frame, text="›", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0,
+                  command=self.ileri_kitap).pack(side="left", padx=5)
 
-film_content = tk.Frame(film_frame, bg="#fffbe9")
-film_content.pack(side="left", pady=10)
+    def get_kitaplar(self):
+        return [
+            {
+                "isim": "The Art of Happiness",
+                "yazar": "Dalai Lama",
+                "görsel": "https://m.media-amazon.com/images/I/41j9pWb6V2L.jpg"
+            },
+            {
+                "isim": "Emotional Intelligence",
+                "yazar": "Daniel Goleman",
+                "görsel": "https://m.media-amazon.com/images/I/41GDikzI7PL.jpg"
+            }
+        ]
 
-film_label = tk.Label(film_content, bg="#fffbe9")
-film_label.pack()
+    def load_filmler(self):
+        try:
+            response = requests.get("http://127.0.0.1:8000/api/recommendations", params={"emotion": self.emotion})
+            response.raise_for_status()
+            data = response.json()
+            self.filmler = data.get("recommendations", [])
+            self.guncelle_film()
+        except Exception as e:
+            messagebox.showerror("Hata", f"Film önerileri alınamadı: {e}")
+            self.filmler = []
 
-film_puan_label = tk.Label(film_content, font=("Arial", 8), bg="#fffbe9", fg="black")
-film_puan_label.pack()
+    def guncelle_film(self):
+        if not self.filmler:
+            self.film_ad_label.config(text="Film bulunamadı.")
+            self.film_puan_label.config(text="")
+            self.film_label.config(image="", text="[Görsel Yok]")
+            return
 
-film_ad_label = tk.Label(film_content, font=("Arial", 9, "bold"), bg="#fffbe9", fg="black")
-film_ad_label.pack()
+        film = self.filmler[self.film_index]
+        try:
+            response = requests.get(film["poster"])
+            img = Image.open(BytesIO(response.content)).resize((100, 140))
+            self.film_imgtk = ImageTk.PhotoImage(img)
+            self.film_label.config(image=self.film_imgtk)
+        except:
+            self.film_label.config(text="[Görsel Yok]", font=("Arial", 10), image="", width=12, height=8)
 
-film_ülke_label = tk.Label(film_content, font=("Arial", 8), bg="#fffbe9", fg="gray")
-film_ülke_label.pack()
+        self.film_ad_label.config(text=film["title"])
+        self.film_puan_label.config(text=film.get("overview", "")[:100])
 
-film_button_frame = tk.Frame(film_content, bg="#fffbe9")
-film_button_frame.pack(pady=4)
+    def ileri_film(self):
+        if self.filmler:
+            self.film_index = (self.film_index + 1) % len(self.filmler)
+            self.guncelle_film()
 
-film_begeni_btn = tk.Button(film_button_frame, text="🤍", font=("Arial", 10), bg="#fffbe9", fg="red", bd=0, command=toggle_film_begeni)
-film_begeni_btn.pack(side="left", padx=5)
+    def geri_film(self):
+        if self.filmler:
+            self.film_index = (self.film_index - 1) % len(self.filmler)
+            self.guncelle_film()
 
-film_kayit_btn = tk.Button(film_button_frame, text="📑", font=("Arial", 10), bg="#fffbe9", fg="orange", bd=0, command=toggle_film_kayit)
-film_kayit_btn.pack(side="left", padx=5)
+    def guncelle_kitap(self):
+        kitap = self.kitaplar[self.kitap_index]
+        try:
+            response = requests.get(kitap["görsel"])
+            img = Image.open(BytesIO(response.content)).resize((100, 140))
+            self.kitap_imgtk = ImageTk.PhotoImage(img)
+            self.kitap_label.config(image=self.kitap_imgtk)
+        except:
+            self.kitap_label.config(text="[Görsel Yok]", font=("Arial", 10), image="", width=12, height=8)
 
-tk.Button(film_frame, text="›", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0, command=ileri_film).pack(side="left", padx=5)
+        self.kitap_ad_label.config(text=kitap["isim"])
+        self.kitap_yazar_label.config(text=kitap["yazar"])
 
-# --- Kitap Serisi ---
-kitap_baslik = tk.Label(root, text="kitap serisi", font=("Brush Script MT", 18), bg="#f0d58c", fg="#b4462b")
-kitap_baslik.pack(fill="x", pady=(15, 5))
+    def ileri_kitap(self):
+        self.kitap_index = (self.kitap_index + 1) % len(self.kitaplar)
+        self.guncelle_kitap()
 
-kitap_frame = tk.Frame(root, bg="#fffbe9")
-kitap_frame.pack()
+    def geri_kitap(self):
+        self.kitap_index = (self.kitap_index - 1) % len(self.kitaplar)
+        self.guncelle_kitap()
 
-tk.Button(kitap_frame, text="‹", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0, command=geri_kitap).pack(side="left", padx=5)
-
-kitap_content = tk.Frame(kitap_frame, bg="#fffbe9")
-kitap_content.pack(side="left", pady=10)
-
-kitap_label = tk.Label(kitap_content, bg="#fffbe9")
-kitap_label.pack()
-
-kitap_ad_label = tk.Label(kitap_content, font=("Arial", 9, "bold"), bg="#fffbe9", fg="black")
-kitap_ad_label.pack()
-
-kitap_yazar_label = tk.Label(kitap_content, font=("Arial", 8), bg="#fffbe9", fg="gray")
-kitap_yazar_label.pack()
-
-kitap_button_frame = tk.Frame(kitap_content, bg="#fffbe9")
-kitap_button_frame.pack(pady=4)
-
-kitap_begeni_btn = tk.Button(kitap_button_frame, text="🤍", font=("Arial", 10), bg="#fffbe9", fg="red", bd=0, command=toggle_kitap_begeni)
-kitap_begeni_btn.pack(side="left", padx=5)
-
-kitap_kayit_btn = tk.Button(kitap_button_frame, text="📑", font=("Arial", 10), bg="#fffbe9", fg="orange", bd=0, command=toggle_kitap_kayit)
-kitap_kayit_btn.pack(side="left", padx=5)
-
-tk.Button(kitap_frame, text="›", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0, command=ileri_kitap).pack(side="left", padx=5)
-
-# Başlat
-guncelle_film()
-guncelle_kitap()
-root.mainloop()
+    def place(self, **kwargs):
+        super().place(**kwargs)
+        self.guncelle_kitap()

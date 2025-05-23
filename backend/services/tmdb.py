@@ -1,6 +1,11 @@
+import os
+from dotenv import load_dotenv
 import requests
 
-TMDB_API_KEY = "8b4971cb8bd025e788420cabcfc29efb"
+load_dotenv()
+TMDB_API_KEY = os.getenv("TMDB_API_KEY")
+
+# Eksik olan sabit tanımı buraya ekliyoruz:
 TMDB_SEARCH_URL = "https://api.themoviedb.org/3/discover/movie"
 
 emotion_to_genre = {
@@ -19,6 +24,10 @@ def get_movies_by_emotion(emotion):
         print(">>> Geçersiz duygu, genre bulunamadı.")
         return []
 
+    if not TMDB_API_KEY:
+        print(">>> TMDB API anahtarı bulunamadı! .env dosyasını kontrol et.")
+        return []
+
     params = {
         "api_key": TMDB_API_KEY,
         "with_genres": genre_id,
@@ -32,7 +41,7 @@ def get_movies_by_emotion(emotion):
     print(f">>> URL: {response.url}")
 
     if response.status_code != 200:
-        print(">>> API başarısız")
+        print(">>> API başarısız:", response.text)
         return []
 
     try:
@@ -50,15 +59,10 @@ def get_movies_by_emotion(emotion):
         }
         for movie in data.get("results", [])[:5]
     ]
+
+# Test bloğu
 if __name__ == "__main__":
     movies = get_movies_by_emotion("üzgün")
     print("Test Filmleri:")
     for movie in movies:
         print(movie["title"])
-
-
-
-
- 
-
-

@@ -1,21 +1,33 @@
-from flask import Flask, request, jsonify
-import requests, os, random, uuid
-from services.tmdb import get_movies_by_emotion
+# backend/routes/images.py
+import os, random, httpx, uuid
+from fastapi import APIRouter, Query
 
-app = Flask(__name__)
+router = APIRouter()
+UNSPLASH_KEY = os.getenv("UNSPLASH_KEY")
+PEXELS_KEY = os.getenv("PEXELS_KEY")
 
-PEXELS_API_KEY = os.getenv("PEXELS_KEY", "UKBeHbZZMdf9XENc7wTIwBa2tbqv10VCXULyup6DQiSzxyKvzNWYTXM9")
-PEXELS_API_URL = 'https://api.pexels.com/v1/search'
-
-# Eski `emotion_mapping` ve geniş `emotion_keywords` eklendi
+# Kullanıcının girdiği duyguya karşılık, onu daha iyi hissettirecek duygu
 emotion_mapping = {
-    "stresli": "sakin", "üzgün": "mutlu", "endişeli": "umutlu", "yalnız": "aşık",
-    "korku": "umutlu", "bitkin": "motivasyon", "kararsız": "motivasyon", "öfke": "sakin",
-    "kıskanç": "özgüven", "şaşkın": "hayret", "mutlu": "mutlu", "heyecanlı": "mutlu",
-    "sakin": "umutlu", "aşık": "romantik", "motivasyon": "başarı",
-    "sevinc": "coşku", "hayret": "hayranlık",
+    "stresli": "sakin",
+    "üzgün": "mutlu",
+    "endişeli": "umutlu",
+    "yalnız": "aşık",
+    "korku": "umutlu",
+    "bitkin": "motivasyon",
+    "kararsız": "motivasyon",
+    "öfke": "sakin",
+    "kıskanç": "özgüven",
+    "şaşkın": "hayret",
+    "mutlu": "mutlu",
+    "heyecanlı": "mutlu",
+    "sakin": "umutlu",
+    "aşık": "romantik",
+    "motivasyon": "başarı",
+    "sevinc": "coşku",
+    "hayret": "hayranlık",
 }
 
+# Hedef duygular için anahtar kelime havuzu
 emotion_keywords = {
     "mutlu": [
         "sunlight in park", "laughing friends", "joyful celebration in nature",
@@ -69,55 +81,44 @@ emotion_keywords = {
     ]
 }
 
-@app.route('/api/images', methods=['GET'])
-def get_images():
-    query = request.args.get('query', '').lower().strip()
-    if not query:
-        return jsonify({'error': 'Sorgu parametresi eksik.'}), 400
+@router.get("/api/images")
+async def images(query: str = Query(...), count: int = 8):
+    rng = random.Random(uuid.uuid4().hex)
 
-    # Duyguyu hedef duyguya çevir
-    target_emotion = emotion_mapping.get(query, query)
+    # Kullanıcının girdiği duygu → onu rahatlatacak hedef duyguya çevrilir
+    target_emotion = emotion_mapping.get(query.lower(), query.lower())
     keywords = emotion_keywords.get(target_emotion, [target_emotion])
-    selected_keyword = random.choice(keywords)
+    selected_keyword = rng.choice(keywords)
 
-    headers = {'Authorization': PEXELS_API_KEY}
-    params = {'query': selected_keyword, 'per_page': 8}
+    sources = ["unsplash", "pexels"]
+    urls = []
 
-    try:
-        response = requests.get(PEXELS_API_URL, headers=headers, params=params)
-        response.raise_for_status()
-        data = response.json()
-        image_urls = [photo['src']['medium'] for photo in data.get('photos', [])]
-        return jsonify({'images': image_urls})
-    except requests.exceptions.RequestException as e:
-        return jsonify({'error': f'Pexels API hatası: {e}'}), 500
-    except Exception as e:
-        return jsonify({'error': f'Sunucu hatası: {e}'}), 500
+    async with httpx.AsyncClient(timeout=8.0) as client:
+        while len(urls) < count and sources:
+            src = rng.choice(sources)
+            try:
+                if src == "unsplash":
+                    resp = await client.get(
+                        "https://api.unsplash.com/photos/random",
+                        params={"query": selected_keyword, "orientation": "landscape", "count": 1},
+                        headers={"Authorization": f"Client-ID {UNSPLASH_KEY}"}
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        data = data if isinstance(data, list) else [data]
+                        urls.extend([d["urls"]["regular"] for d in data])
+                else:
+                    resp = await client.get(
+                        "https://api.pexels.com/v1/search",
+                        params={"query": selected_keyword, "per_page": 10, "page": rng.randint(1, 5)},
+                        headers={"Authorization": PEXELS_KEY}
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        rng.shuffle(data["photos"])
+                        urls.extend([p["src"]["medium"] for p in data["photos"]])
+            except Exception as e:
+                print("API error:", e)
+            sources.remove(src)
 
-@app.route('/api/recommendations', methods=['GET'])
-def api_get_movie_recommendations():
-    emotion = request.args.get('emotion', '').lower().strip()
-    if not emotion:
-        return jsonify({'error': 'Duygu parametresi eksik.'}), 400
-
-    movies = get_movies_by_emotion(emotion)
-    if not movies:
-        return jsonify({'recommendations': [], 'message': 'Film önerisi bulunamadı.'}), 200
-    return jsonify({'recommendations': movies})
-
-@app.route('/recommend', methods=['POST'])
-def recommend_movies_post():
-    data = request.json
-    emotion = data.get('emotion')
-    if not emotion:
-        return jsonify({'error': 'Emotion not provided in JSON body'}), 400
-
-    processed_emotion = emotion.lower().strip()
-    movies = get_movies_by_emotion(processed_emotion)
-    if not movies:
-        return jsonify({'recommendations': [], 'message': 'Film önerisi bulunamadı.'}), 200
-    return jsonify({'recommendations': movies})
-
-if __name__ == '__main__':
-    print("Geliştirilmiş Flask API başlatılıyor...")
-    app.run(debug=True, port=5000)
+    return {"images": list(dict.fromkeys(urls))[:count]}
