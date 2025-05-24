@@ -1,67 +1,87 @@
-import tkinter as tk
-from PIL import Image, ImageTk
+from PyQt5 import QtWidgets, QtGui, QtCore
 import requests
-import io
+from io import BytesIO
+from PIL import Image, ImageQt
 
-class LikesScreen(tk.Frame):
-    def __init__(self, master, controller):
-        super().__init__(master, bg="#fffbe9")
-        self.controller = controller
+class LikesScreen(QtWidgets.QWidget):
+    def __init__(self, stacked_widget=None):
+        super().__init__()
+        self.stacked_widget = stacked_widget
         self.liked_images = []
         self.images = []
-        self.create_widgets()
+        self.init_ui()
 
-    def create_widgets(self):
-        top_frame = tk.Frame(self, bg="#fffbe9")
-        top_frame.pack(fill="x")
+    def init_ui(self):
+        self.setStyleSheet("background-color: #fffbe9;")
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
 
-        title = tk.Label(top_frame, text="❤️ Beğenilen Görseller", font=("Arial", 14, "bold"), bg="#fffbe9", fg="#b4462b")
-        title.pack(pady=10)
+        # Başlık ve geri butonu
+        top_bar = QtWidgets.QHBoxLayout()
 
-        back_btn = tk.Button(top_frame, text="←", bg="#fffbe9", fg="#b4462b",
-                             font=("Arial", 10, "bold"), bd=0,
-                             command=lambda: self.controller.show_frame("MainScreen"))
-        back_btn.pack(side="left", padx=10)
+        back_btn = QtWidgets.QPushButton("←")
+        back_btn.setStyleSheet("background-color: transparent; font: bold 12px 'Arial'; color: #b4462b;")
+        back_btn.clicked.connect(self.go_back)
+        top_bar.addWidget(back_btn, alignment=QtCore.Qt.AlignLeft)
 
-        # Canvas scroll alanı
-        self.canvas = tk.Canvas(self, bg="#fffbe9", highlightthickness=0)
-        self.scroll_y = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
-        self.frame = tk.Frame(self.canvas, bg="#fffbe9")
+        title = QtWidgets.QLabel("Beğenilen Görseller")
+        title.setStyleSheet("font: bold 14px 'Arial'; color: #b4462b;")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        top_bar.addWidget(title)
 
-        self.canvas.create_window((0, 0), window=self.frame, anchor="nw")
-        self.canvas.configure(yscrollcommand=self.scroll_y.set)
+        top_bar.addStretch()
+        main_layout.addLayout(top_bar)
 
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.scroll_y.pack(side="right", fill="y")
+        # Scroll alanı
+        self.scroll_area = QtWidgets.QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        scroll_content = QtWidgets.QWidget()
+        self.scroll_layout = QtWidgets.QVBoxLayout(scroll_content)
+        self.scroll_area.setWidget(scroll_content)
+        main_layout.addWidget(self.scroll_area)
 
+    def go_back(self):
+        if self.stacked_widget:
+            self.stacked_widget.setCurrentIndex(2)  # Örnek olarak MainScreen index
 
     def update_liked_images(self, image_urls):
         self.liked_images = image_urls
-        for widget in self.frame.winfo_children():
-            widget.destroy()
+
+        for i in reversed(range(self.scroll_layout.count())):
+            widget = self.scroll_layout.itemAt(i).widget()
+            if widget is not None:
+                widget.deleteLater()
 
         self.images = []
         for url in self.liked_images:
             try:
                 img_data = requests.get(url).content
-                img = Image.open(io.BytesIO(img_data))
-                img = img.resize((280, 160))
-                photo = ImageTk.PhotoImage(img)
-                self.images.append(photo)
+                img = Image.open(BytesIO(img_data)).resize((280, 160))
+                qimage = ImageQt.ImageQt(img)
+                pixmap = QtGui.QPixmap.fromImage(qimage)
 
-                container = tk.Frame(self.frame, bg="#fffbe9")
-                container.pack(pady=10)
+                container = QtWidgets.QWidget()
+                container.setStyleSheet("background-color: #fffbe9;")
+                vbox = QtWidgets.QVBoxLayout(container)
 
-                lbl = tk.Label(container, image=photo, bg="#fffbe9")
-                lbl.image = photo
-                lbl.pack()
+                img_label = QtWidgets.QLabel()
+                img_label.setPixmap(pixmap)
+                img_label.setAlignment(QtCore.Qt.AlignCenter)
+                vbox.addWidget(img_label)
 
-                remove_btn = tk.Button(container, text="Beğenmekten Vazgeç", bg="#fffbe9", fg="red", font=("Arial", 9), bd=0,
-                                       command=lambda u=url: self.remove_liked_image(u))
-                remove_btn.pack(pady=2)
+                remove_btn = QtWidgets.QPushButton("Beğenmekten Vazgeç")
+                remove_btn.setStyleSheet("background-color: transparent; color: red; font: 11px 'Arial';")
+                remove_btn.clicked.connect(lambda _, u=url: self.remove_liked_image(u))
+                vbox.addWidget(remove_btn)
+
+                self.scroll_layout.addWidget(container)
+                self.images.append(pixmap)
 
             except Exception as e:
-                tk.Label(self.frame, text=f"Hata: {e}", bg="#fffbe9", fg="red").pack()
+                error_label = QtWidgets.QLabel(f"Hata: {e}")
+                error_label.setStyleSheet("color: red; font: 11px 'Arial';")
+                self.scroll_layout.addWidget(error_label)
 
     def remove_liked_image(self, url):
         if url in self.liked_images:

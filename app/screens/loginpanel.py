@@ -111,4 +111,3 @@ class LoginPanelScreen(QtWidgets.QWidget):
             self.stacked_widget.setCurrentWidget(self.stacked_widget.main_screen)
         else:
             QtWidgets.QMessageBox.critical(self, "Hata", "Geçersiz e-posta ya da şifre.")
-

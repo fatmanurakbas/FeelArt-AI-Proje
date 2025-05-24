@@ -66,10 +66,3 @@ if __name__ == "__main__":
     print("Test Filmleri:")
     for movie in movies:
         print(movie["title"])
-
-
-
-
- 
-
-
