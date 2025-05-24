@@ -1,11 +1,8 @@
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
-from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk
+from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from PIL import Image, ImageQt
 import json
 import os
-import tkinter as tk
-
 
 USER_DATA_PATH = "user_data.json"
 
@@ -19,110 +16,114 @@ def save_user_data(data):
     with open(USER_DATA_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
 
-class ProfileScreen(ttk.Frame):
-    def __init__(self, master, controller):
-        super().__init__(master)
-        self.controller = controller
+class ProfileScreen(QtWidgets.QWidget):
+    def __init__(self, stacked_widget=None):
+        super().__init__()
+        self.stacked_widget = stacked_widget
         self.data = load_user_data()
 
-        # Canvas ve scrollbar
-        canvas = tk.Canvas(self, borderwidth=0, background="#ffffff")
-        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        scrollbar.pack(side="right", fill="y")
-        canvas.pack(side="left", fill="both", expand=True)
-
-        # Scrollable iç çerçeve
-        self.scroll_frame = ttk.Frame(canvas)
-        self.scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-
-        # Scroll frame'i canvas içine yerleştir
-        self.scroll_window = canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
-
-        # Scroll-frame genişliğini canvas'a uydur
-        def _on_canvas_resize(event):
-            canvas.itemconfig(self.scroll_window, width=event.width)
-        canvas.bind("<Configure>", _on_canvas_resize)
-
-        # Scroll için mousewheel desteği
-        def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
-
-        # Aşağıda kalan tüm kod, self.scroll_frame içine yazılacak
-        self.name = ttk.StringVar(value=self.data.get("name", ""))
-        self.email = ttk.StringVar(value=self.data.get("email", ""))
+        self.name = self.data.get("name", "")
+        self.email = self.data.get("email", "")
         self.profile_image_path = self.data.get("profile_image", "")
 
-        self.avatar_label = ttk.Label(self.scroll_frame)
-        self.avatar_label.pack(pady=(5, 10))
-        self.after(100, self.update_avatar)
+        self.init_ui()
 
-        ttk.Button(self.scroll_frame, text="Select Photo", command=self.select_photo, bootstyle="info-outline").pack(pady=(0, 15))
-        ttk.Label(self.scroll_frame, text="Profile", font=("Helvetica", 16, "bold"), bootstyle="dark").pack(pady=(0, 10))
+    def init_ui(self):
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
 
-        profile_card = ttk.Labelframe(self.scroll_frame, text="User Info", padding=10, bootstyle="info")
-        profile_card.pack(fill="x", pady=10)
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_content = QtWidgets.QWidget()
+        scroll_layout = QtWidgets.QVBoxLayout(scroll_content)
 
-        ttk.Label(profile_card, text="Name:", font=("Arial", 10)).pack(anchor="w")
-        ttk.Entry(profile_card, textvariable=self.name, width=30).pack(fill="x", pady=(0, 10))
+        self.avatar_label = QtWidgets.QLabel()
+        scroll_layout.addWidget(self.avatar_label, alignment=QtCore.Qt.AlignCenter)
+        self.update_avatar()
 
-        ttk.Label(profile_card, text="Email:", font=("Arial", 10)).pack(anchor="w")
-        ttk.Entry(profile_card, textvariable=self.email, width=30).pack(fill="x")
+        select_btn = QtWidgets.QPushButton("Fotoğraf Seç")
+        select_btn.clicked.connect(self.select_photo)
+        scroll_layout.addWidget(select_btn)
 
-        ttk.Button(profile_card, text="Save Profile", bootstyle="success-outline", command=self.save_profile).pack(pady=10)
+        title = QtWidgets.QLabel("Profil")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        title.setStyleSheet("font: bold 16px;")
+        scroll_layout.addWidget(title)
 
-        settings_card = ttk.Labelframe(self.scroll_frame, text="Settings", padding=10, bootstyle="secondary")
-        settings_card.pack(fill="x", pady=10)
+        profile_box = QtWidgets.QGroupBox("Kullanıcı Bilgileri")
+        profile_layout = QtWidgets.QFormLayout(profile_box)
 
-        ttk.Button(settings_card, text="Change Password", bootstyle="light").pack(fill="x", pady=5)
-        ttk.Button(settings_card, text="Language", bootstyle="light").pack(fill="x", pady=5)
-        ttk.Button(settings_card, text="Clear History", bootstyle="danger-outline", command=self.clear_history).pack(fill="x", pady=5)
+        self.name_input = QtWidgets.QLineEdit(self.name)
+        self.email_input = QtWidgets.QLineEdit(self.email)
 
-        bottom_frame = ttk.Frame(self.scroll_frame)
-        bottom_frame.pack(fill="x", pady=20)
+        profile_layout.addRow("Ad:", self.name_input)
+        profile_layout.addRow("E-posta:", self.email_input)
 
-        ttk.Button(bottom_frame, text="Home", bootstyle="info", command=lambda: self.controller.show_frame("MainScreen")).pack(side="left", padx=10)
-        ttk.Button(bottom_frame, text="Logout", bootstyle="danger", command=self.exit_app).pack(side="right", padx=10)
+        save_btn = QtWidgets.QPushButton("Profili Kaydet")
+        save_btn.clicked.connect(self.save_profile)
+        profile_layout.addRow(save_btn)
+
+        scroll_layout.addWidget(profile_box)
+
+        settings_box = QtWidgets.QGroupBox("Ayarlar")
+        settings_layout = QtWidgets.QVBoxLayout(settings_box)
+
+        pw_btn = QtWidgets.QPushButton("Şifre Değiştir")
+        lang_btn = QtWidgets.QPushButton("Dil Seçimi")
+        clear_btn = QtWidgets.QPushButton("Geçmişi Temizle")
+        clear_btn.clicked.connect(self.clear_history)
+
+        settings_layout.addWidget(pw_btn)
+        settings_layout.addWidget(lang_btn)
+        settings_layout.addWidget(clear_btn)
+
+        scroll_layout.addWidget(settings_box)
+
+        nav_layout = QtWidgets.QHBoxLayout()
+        home_btn = QtWidgets.QPushButton("Ana Sayfa")
+        logout_btn = QtWidgets.QPushButton("Çıkış")
+        home_btn.clicked.connect(self.go_home)
+        logout_btn.clicked.connect(QtWidgets.qApp.quit)
+        nav_layout.addWidget(home_btn)
+        nav_layout.addStretch()
+        nav_layout.addWidget(logout_btn)
+
+        scroll_layout.addLayout(nav_layout)
+
+        scroll_area.setWidget(scroll_content)
+        layout.addWidget(scroll_area)
 
     def update_avatar(self):
         if self.profile_image_path and os.path.exists(self.profile_image_path):
             try:
-                img = Image.open(self.profile_image_path)
-                img = img.resize((100, 100))
-                self.avatar_image = ImageTk.PhotoImage(img)
-                self.avatar_label.configure(image=self.avatar_image)
+                img = Image.open(self.profile_image_path).resize((100, 100))
+                qimage = ImageQt.ImageQt(img)
+                pixmap = QtGui.QPixmap.fromImage(qimage)
+                self.avatar_label.setPixmap(pixmap)
             except:
-                self.avatar_label.configure(text="No Image", image="", width=20)
+                self.avatar_label.setText("[Resim Yüklenemedi]")
         else:
-            self.avatar_label.configure(text="No Image", image="", width=20)
+            self.avatar_label.setText("[Profil Fotoğrafı Yok]")
 
     def select_photo(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg *.png *.jpeg")])
+        file_path, _ = QFileDialog.getOpenFileName(self, "Fotoğraf Seç", "", "Resimler (*.jpg *.png *.jpeg)")
         if file_path:
             self.profile_image_path = file_path
             self.update_avatar()
 
     def save_profile(self):
-        self.data["name"] = self.name.get()
-        self.data["email"] = self.email.get()
+        self.data["name"] = self.name_input.text()
+        self.data["email"] = self.email_input.text()
         self.data["profile_image"] = self.profile_image_path
         save_user_data(self.data)
-        messagebox.showinfo("Success", "Profile updated successfully")
+        QMessageBox.information(self, "Başarılı", "Profil başarıyla güncellendi.")
 
     def clear_history(self):
         self.data["history"] = []
         save_user_data(self.data)
+        QMessageBox.information(self, "Geçmiş Silindi", "Tüm geçmiş başarıyla temizlendi.")
 
-        # MainScreen varsa, onun history içeriğini güncelle
-        main_screen = self.controller.frames.get("MainScreen")
-        if main_screen and hasattr(main_screen, "load_history"):
-            main_screen.load_history()
-
-        messagebox.showinfo("Geçmiş Silindi", "Tüm sohbet geçmişi temizlendi.")
-
-
-
-    def exit_app(self):
-        self.controller.quit()
+    def go_home(self):
+        if self.stacked_widget:
+            self.stacked_widget.setCurrentIndex(2)

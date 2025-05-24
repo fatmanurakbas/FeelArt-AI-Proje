@@ -3,9 +3,11 @@ import sys
 import os
 import subprocess
 
-class KayitEkrani(QtWidgets.QWidget):
-    def __init__(self):
+class SignupScreen(QtWidgets.QWidget):
+    def __init__(self, stacked_widget=None):
+
         super().__init__()
+        self.stacked_widget = stacked_widget
         self.setWindowTitle("FeelArt | Kayıt Ol")
         self.setFixedSize(420, 560)
 
@@ -118,14 +120,12 @@ class KayitEkrani(QtWidgets.QWidget):
             QtWidgets.QMessageBox.information(self, "Başarılı", "Kayıt başarılı!")
 
     def giris_ekranina_don(self):
-        try:
-            subprocess.Popen(["python", "login.py"])
-            self.close()
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "HATA", f"Giriş ekranı açılamadı:\n{e}")
+        if self.stacked_widget:
+            self.stacked_widget.setCurrentIndex(0)
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    pencere = KayitEkrani()
+    pencere = SignupScreen()
     pencere.show()
     sys.exit(app.exec_())

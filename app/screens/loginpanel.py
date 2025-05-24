@@ -1,46 +1,113 @@
-import tkinter as tk
-from tkinter import messagebox
+from PyQt5 import QtWidgets, QtGui, QtCore
+import os
 
-class LoginPanelScreen(tk.Frame):
-    def __init__(self, master, controller):
-        super().__init__(master, bg="#fffbe9")
-        self.controller = controller
+class LoginPanelScreen(QtWidgets.QWidget):
+    def __init__(self, stacked_widget=None):
+        super().__init__()
+        self.stacked_widget = stacked_widget
+        self.setFixedSize(420, 560)
 
-        text_color = "#b4462b"
-        entry_bg = "#eba94d"
-        btn_bg = "#f5e2a9"
+        # 🎨 Arka Plan Görseli
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        bg_path = os.path.join(current_dir, "FeelArt.png")
 
-        # Geri Butonu
-        tk.Button(self, text="←", command=lambda: controller.show_frame("LoginScreen"),
-                  font=("Arial", 12), bg="#fffbe9", fg=text_color, bd=0).pack(anchor="w", padx=10, pady=5)
+        self.bg_label = QtWidgets.QLabel(self)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 560)
 
-        tk.Label(self, text="E-posta ile Giriş", font=("Arial", 14, "bold"), fg=text_color, bg="#fffbe9").pack(pady=(10, 20))
+        # 🌟 Form Kutusu
+        self.form = QtWidgets.QWidget(self)
+        self.form.setGeometry(40, 110, 340, 360)
+        self.form.setStyleSheet("background-color: rgba(255, 255, 255, 160); border-radius: 20px;")
 
-        # Form alanları
-        self.entry_email = self.create_field("E-posta")
-        self.entry_pass = self.create_field("Şifre", show="*")
+        layout = QtWidgets.QVBoxLayout(self.form)
+        layout.setSpacing(15)
 
-        # 🔽 Şifremi Unuttum butonunu buraya ekle
-        forgot = tk.Label(self, text="Şifremi Unuttum!", font=("Arial", 8, "italic"), fg="gray", bg="#fffbe9", cursor="hand2")
-        forgot.pack(anchor="e", padx=20, pady=(0, 20))
-        forgot.bind("<Button-1>", lambda e: controller.show_frame("ForgotPasswordScreen"))
+        # 🔙 Geri Butonu
+        back_btn = QtWidgets.QPushButton("←")
+        back_btn.setCursor(QtCore.Qt.PointingHandCursor)
+        back_btn.setStyleSheet("background-color: transparent; border: none; font: 16px 'Arial'; color: #b4462b;")
+        back_btn.clicked.connect(self.go_back)
+        layout.addWidget(back_btn, alignment=QtCore.Qt.AlignLeft)
 
-        # Giriş Butonu
-        tk.Button(self, text="Giriş Yap", command=self.login_action, font=("Arial", 10, "bold"),
-                  bg=btn_bg, fg="black", bd=1, relief="ridge", width=15).pack(pady=20)
+        # Başlık
+        title = QtWidgets.QLabel("E-posta ile Giriş")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: bold;
+            color: #7b4caf;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+        """)
+        layout.addWidget(title)
 
-    def create_field(self, label_text, show=None):
-        tk.Label(self, text=label_text, font=("Arial", 9, "bold"), fg="#b4462b", bg="#fffbe9").pack(anchor="w", padx=20)
-        entry = tk.Entry(self, bg="#eba94d", relief="flat", font=("Arial", 10), width=28, show=show)
-        entry.pack(pady=(0, 10), ipady=5)
-        return entry
+        # 📧 E-posta
+        self.entry_email = QtWidgets.QLineEdit()
+        self.entry_email.setPlaceholderText("E-posta")
+        self.entry_email.setStyleSheet(self.input_style())
+        layout.addWidget(self.entry_email)
+
+        # 🔒 Şifre
+        self.entry_pass = QtWidgets.QLineEdit()
+        self.entry_pass.setPlaceholderText("Şifre")
+        self.entry_pass.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.entry_pass.setStyleSheet(self.input_style())
+        layout.addWidget(self.entry_pass)
+
+        # 🔐 Şifremi Unuttum
+        forgot = QtWidgets.QLabel("<u>Şifremi Unuttum!</u>")
+        forgot.setStyleSheet("color: #7b4caf; font: italic 10px 'Arial';")
+        forgot.setAlignment(QtCore.Qt.AlignRight)
+        forgot.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        forgot.mousePressEvent = lambda e: self.stacked_widget.setCurrentIndex(3)
+        layout.addWidget(forgot)
+
+
+        # 🔓 Giriş Yap Butonu
+        login_btn = QtWidgets.QPushButton("Giriş Yap")
+        login_btn.setCursor(QtCore.Qt.PointingHandCursor)
+        login_btn.setStyleSheet(self.button_style())
+        login_btn.clicked.connect(self.login_action)
+        layout.addWidget(login_btn)
+
+    def input_style(self):
+        return """
+            QLineEdit {
+                background-color: white;
+                border: none;
+                border-radius: 15px;
+                padding: 10px;
+                font-size: 14px;
+                color: #4d3f63;
+            }      
+         """
+
+
+    def button_style(self):
+        return """
+            QPushButton {
+                background-color: #a782e6;
+                color: white;
+                border: none;
+                border-radius: 18px;
+                padding: 10px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #9d6de0;
+            }
+        """
+
+    def go_back(self):
+        if self.stacked_widget:
+            self.stacked_widget.setCurrentIndex(0)  # Ana giriş ekranı
 
     def login_action(self):
-        email = self.entry_email.get()
-        password = self.entry_pass.get()
+        email = self.entry_email.text().strip()
+        password = self.entry_pass.text().strip()
 
         if email == "a@a.com" and password == "1":
-           self.controller.show_frame("MainScreen")
+            self.stacked_widget.setCurrentWidget(self.stacked_widget.main_screen)
         else:
-            messagebox.showerror("Hata", "Geçersiz e-posta ya da şifre.")
-
+            QtWidgets.QMessageBox.critical(self, "Hata", "Geçersiz e-posta ya da şifre.")

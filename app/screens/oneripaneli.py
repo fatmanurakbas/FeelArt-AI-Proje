@@ -1,53 +1,77 @@
-import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk
+from PyQt5 import QtWidgets, QtGui, QtCore
 import requests
 from io import BytesIO
+from PIL import Image, ImageQt
 
-class OneriPaneliScreen(tk.Frame):
-    def __init__(self, master, controller, emotion):
-        super().__init__(master, bg="#fffbe9")
-        self.controller = controller
+class OneriPaneliScreen(QtWidgets.QWidget):
+    def __init__(self, stacked_widget=None, emotion="mutlu"):
+        super().__init__()
+        self.stacked_widget = stacked_widget
         self.emotion = emotion
         self.film_index = 0
         self.filmler = []
-        self.film_imgtk = None
+        self.film_pixmap = None
 
         self.build_ui()
         self.load_filmler()
 
     def build_ui(self):
-        # ==== Üst Başlık ve Geri Butonu ====
-        top_frame = tk.Frame(self, bg="#fffbe9")
-        top_frame.pack(fill="x", pady=(10, 5), padx=10)
+        self.setStyleSheet("background-color: #fffbe9;")
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
 
-        back_btn = tk.Label(top_frame, text="← Geri", font=("Arial", 10, "bold"), fg="#b4462b",
-                            bg="#fffbe9", cursor="hand2")
-        back_btn.pack(side="left")
-        back_btn.bind("<Button-1>", lambda e: self.controller.show_frame("MainScreen"))
+        # Üst başlık ve geri butonu
+        top_bar = QtWidgets.QHBoxLayout()
 
-        tk.Label(self, text="Film Serisi", font=("Brush Script MT", 18), bg="#f0d58c", fg="#b4462b").pack(fill="x", pady=(10, 5))
+        back_btn = QtWidgets.QPushButton("← Geri")
+        back_btn.setStyleSheet("background-color: transparent; border: none; color: #b4462b; font: bold 12px 'Arial';")
+        back_btn.clicked.connect(self.go_back)
+        top_bar.addWidget(back_btn, alignment=QtCore.Qt.AlignLeft)
 
-        self.film_frame = tk.Frame(self, bg="#fffbe9")
-        self.film_frame.pack()
+        main_layout.addLayout(top_bar)
 
-        tk.Button(self.film_frame, text="‹", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0,
-                  command=self.geri_film).pack(side="left", padx=5)
+        title = QtWidgets.QLabel("Film Serisi")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        title.setStyleSheet("font: 18px 'Brush Script MT'; background-color: #f0d58c; color: #b4462b;")
+        main_layout.addWidget(title)
 
-        self.film_content = tk.Frame(self.film_frame, bg="#fffbe9")
-        self.film_content.pack(side="left", pady=10)
+        self.film_frame = QtWidgets.QHBoxLayout()
 
-        self.film_label = tk.Label(self.film_content, bg="#fffbe9")
-        self.film_label.pack()
+        self.left_btn = QtWidgets.QPushButton("‹")
+        self.left_btn.setStyleSheet("background-color: transparent; font: 14px; color: #b4462b;")
+        self.left_btn.clicked.connect(self.geri_film)
+        self.film_frame.addWidget(self.left_btn)
 
-        self.film_ad_label = tk.Label(self.film_content, font=("Arial", 9, "bold"), bg="#fffbe9", fg="black")
-        self.film_ad_label.pack()
+        self.film_content = QtWidgets.QVBoxLayout()
 
-        self.film_overview_label = tk.Label(self.film_content, font=("Arial", 8), bg="#fffbe9", fg="black", wraplength=300, justify="left")
-        self.film_overview_label.pack()
+        self.film_label = QtWidgets.QLabel()
+        self.film_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.film_content.addWidget(self.film_label)
 
-        tk.Button(self.film_frame, text="›", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0,
-                  command=self.ileri_film).pack(side="left", padx=5)
+        self.film_ad_label = QtWidgets.QLabel()
+        self.film_ad_label.setStyleSheet("font: bold 10px 'Arial'; color: black;")
+        self.film_ad_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.film_content.addWidget(self.film_ad_label)
+
+        self.film_overview_label = QtWidgets.QLabel()
+        self.film_overview_label.setWordWrap(True)
+        self.film_overview_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.film_overview_label.setStyleSheet("font: 10px 'Arial'; color: black;")
+        self.film_content.addWidget(self.film_overview_label)
+
+        self.film_frame.addLayout(self.film_content)
+
+        self.right_btn = QtWidgets.QPushButton("›")
+        self.right_btn.setStyleSheet("background-color: transparent; font: 14px; color: #b4462b;")
+        self.right_btn.clicked.connect(self.ileri_film)
+        self.film_frame.addWidget(self.right_btn)
+
+        main_layout.addLayout(self.film_frame)
+
+    def go_back(self):
+        if self.stacked_widget:
+            self.stacked_widget.setCurrentIndex(2)  # Örnek: Ana ekran index
 
     def load_filmler(self):
         try:
@@ -57,27 +81,29 @@ class OneriPaneliScreen(tk.Frame):
             self.filmler = data.get("recommendations", [])
             self.guncelle_film()
         except Exception as e:
-            messagebox.showerror("Hata", f"Film önerileri alınamadı: {e}")
+            QtWidgets.QMessageBox.critical(self, "Hata", f"Film önerileri alınamadı: {e}")
             self.filmler = []
 
     def guncelle_film(self):
         if not self.filmler:
-            self.film_ad_label.config(text="Film bulunamadı.")
-            self.film_overview_label.config(text="")
-            self.film_label.config(image="", text="[Görsel Yok]")
+            self.film_ad_label.setText("Film bulunamadı.")
+            self.film_overview_label.setText("")
+            self.film_label.clear()
+            self.film_label.setText("[Görsel Yok]")
             return
 
         film = self.filmler[self.film_index]
         try:
             response = requests.get(film["poster"])
             img = Image.open(BytesIO(response.content)).resize((100, 140))
-            self.film_imgtk = ImageTk.PhotoImage(img)
-            self.film_label.config(image=self.film_imgtk)
+            qimage = ImageQt.ImageQt(img)
+            self.film_pixmap = QtGui.QPixmap.fromImage(qimage)
+            self.film_label.setPixmap(self.film_pixmap)
         except:
-            self.film_label.config(text="[Görsel Yok]", font=("Arial", 10), image="", width=12, height=8)
+            self.film_label.setText("[Görsel Yok]")
 
-        self.film_ad_label.config(text=film["title"])
-        self.film_overview_label.config(text=film.get("overview", ""))
+        self.film_ad_label.setText(film["title"])
+        self.film_overview_label.setText(film.get("overview", ""))
 
     def ileri_film(self):
         if self.filmler:
@@ -88,6 +114,3 @@ class OneriPaneliScreen(tk.Frame):
         if self.filmler:
             self.film_index = (self.film_index - 1) % len(self.filmler)
             self.guncelle_film()
-
-    def place(self, **kwargs):
-        super().place(**kwargs)
