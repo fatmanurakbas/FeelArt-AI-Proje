@@ -72,4 +72,3 @@ class LoginScreen(QtWidgets.QWidget):
     def goto_signup(self):
         if self.stacked_widget:
             self.stacked_widget.setCurrentIndex(4)  # Kayıt ekranı index
-
