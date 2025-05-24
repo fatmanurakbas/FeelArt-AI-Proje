@@ -1,10 +1,10 @@
 {
-  "name": "Miranda West",
-  "email": "miranda@example.com",
-  "profile_image": "path_to_image.jpg",
-  "history": [
-    "• Günlük 1",
-    "• Duygu Günlüğü",
-    "• Renk Terapisi"
-  ]
+    "name": "Miranda West",
+    "email": "miranda@example.com",
+    "profile_image": "path_to_image.jpg",
+    "history": [
+        "\u00fczg\u00fcn"
+    ],
+    "language": "T\u00fcrk\u00e7e",
+    "theme": "light"
 }
