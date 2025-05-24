@@ -1,8 +1,10 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 import requests
+from PIL import Image
 from io import BytesIO
-from PIL import Image, ImageQt
-
+import os
+from PIL import Image
+from PIL import ImageQt
 class OneriPaneliScreen(QtWidgets.QWidget):
     def __init__(self, stacked_widget=None, emotion="mutlu"):
         super().__init__()
@@ -10,68 +12,91 @@ class OneriPaneliScreen(QtWidgets.QWidget):
         self.emotion = emotion
         self.film_index = 0
         self.filmler = []
-        self.film_pixmap = None
 
-        self.build_ui()
+        self.init_ui()
         self.load_filmler()
 
-    def build_ui(self):
-        self.setStyleSheet("background-color: #fffbe9;")
-        main_layout = QtWidgets.QVBoxLayout(self)
-        main_layout.setContentsMargins(10, 10, 10, 10)
-        main_layout.setSpacing(10)
+    def init_ui(self):
+        self.setFixedSize(420, 560)
 
-        # Üst başlık ve geri butonu
-        top_bar = QtWidgets.QHBoxLayout()
+        # === Arka plan görseli ===
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        bg_path = os.path.join(current_dir, "FeelArt.png")
+        self.bg_label = QtWidgets.QLabel(self)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 560)
 
+        # === Beyaz cam kutu ===
+        self.container = QtWidgets.QWidget(self)
+        self.container.setGeometry(15, 15, 390, 530)
+        self.container.setStyleSheet("background-color: rgba(255, 255, 255, 200); border-radius: 20px;")
+
+        layout = QtWidgets.QVBoxLayout(self.container)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(12)
+
+        # === Geri butonu ===
         back_btn = QtWidgets.QPushButton("← Geri")
-        back_btn.setStyleSheet("background-color: transparent; border: none; color: #b4462b; font: bold 12px 'Arial';")
+        back_btn.setStyleSheet("background-color: transparent; color: #b4462b; font: bold 12px 'Arial'; border: none;")
         back_btn.clicked.connect(self.go_back)
-        top_bar.addWidget(back_btn, alignment=QtCore.Qt.AlignLeft)
+        layout.addWidget(back_btn, alignment=QtCore.Qt.AlignLeft)
 
-        main_layout.addLayout(top_bar)
-
+        # === Başlık ===
         title = QtWidgets.QLabel("Film Serisi")
         title.setAlignment(QtCore.Qt.AlignCenter)
-        title.setStyleSheet("font: 18px 'Brush Script MT'; background-color: #f0d58c; color: #b4462b;")
-        main_layout.addWidget(title)
+        title.setStyleSheet("font: bold 20px 'Brush Script MT'; color: #b4462b;")
+        layout.addWidget(title)
 
-        self.film_frame = QtWidgets.QHBoxLayout()
+        # === Film görseli ===
+        self.poster_label = QtWidgets.QLabel("[Görsel Yok]")
+        self.poster_label.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self.poster_label)
 
-        self.left_btn = QtWidgets.QPushButton("‹")
-        self.left_btn.setStyleSheet("background-color: transparent; font: 14px; color: #b4462b;")
-        self.left_btn.clicked.connect(self.geri_film)
-        self.film_frame.addWidget(self.left_btn)
-
-        self.film_content = QtWidgets.QVBoxLayout()
-
-        self.film_label = QtWidgets.QLabel()
-        self.film_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.film_content.addWidget(self.film_label)
-
-        self.film_ad_label = QtWidgets.QLabel()
-        self.film_ad_label.setStyleSheet("font: bold 10px 'Arial'; color: black;")
+        # === Film adı ===
+        self.film_ad_label = QtWidgets.QLabel("")
         self.film_ad_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.film_content.addWidget(self.film_ad_label)
+        self.film_ad_label.setStyleSheet("font: bold 11px 'Arial'; color: #b4462b;")
+        layout.addWidget(self.film_ad_label)
 
-        self.film_overview_label = QtWidgets.QLabel()
-        self.film_overview_label.setWordWrap(True)
+        # === Film açıklama ===
+        self.film_overview_label = QtWidgets.QLabel("")
         self.film_overview_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.film_overview_label.setStyleSheet("font: 10px 'Arial'; color: black;")
-        self.film_content.addWidget(self.film_overview_label)
+        self.film_overview_label.setWordWrap(True)
+        self.film_overview_label.setStyleSheet("font: 10px 'Arial'; color: #333;")
+        layout.addWidget(self.film_overview_label)
 
-        self.film_frame.addLayout(self.film_content)
+        # === Navigasyon butonları ===
+        nav_layout = QtWidgets.QHBoxLayout()
 
-        self.right_btn = QtWidgets.QPushButton("›")
-        self.right_btn.setStyleSheet("background-color: transparent; font: 14px; color: #b4462b;")
+        self.left_btn = QtWidgets.QPushButton("⟨")
+        self.right_btn = QtWidgets.QPushButton("⟩")
+
+        for btn in [self.left_btn, self.right_btn]:
+            btn.setFixedSize(30, 30)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #f5e2a9;
+                    font: bold 14px 'Arial';
+                    color: #b4462b;
+                    border-radius: 15px;
+                }
+                QPushButton:hover {
+                    background-color: #f0d58c;
+                }
+            """)
+
+        self.left_btn.clicked.connect(self.geri_film)
         self.right_btn.clicked.connect(self.ileri_film)
-        self.film_frame.addWidget(self.right_btn)
 
-        main_layout.addLayout(self.film_frame)
+        nav_layout.addWidget(self.left_btn)
+        nav_layout.addStretch()
+        nav_layout.addWidget(self.right_btn)
+
+        layout.addLayout(nav_layout)
 
     def go_back(self):
         if self.stacked_widget:
-            self.stacked_widget.setCurrentIndex(2)  # Örnek: Ana ekran index
+            self.stacked_widget.setCurrentIndex(2)
 
     def load_filmler(self):
         try:
@@ -81,26 +106,26 @@ class OneriPaneliScreen(QtWidgets.QWidget):
             self.filmler = data.get("recommendations", [])
             self.guncelle_film()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Hata", f"Film önerileri alınamadı: {e}")
+            QtWidgets.QMessageBox.critical(self, "Hata", f"Film önerileri alınamadı:\n{e}")
             self.filmler = []
 
     def guncelle_film(self):
         if not self.filmler:
             self.film_ad_label.setText("Film bulunamadı.")
             self.film_overview_label.setText("")
-            self.film_label.clear()
-            self.film_label.setText("[Görsel Yok]")
+            self.poster_label.setText("[Görsel Yok]")
             return
 
         film = self.filmler[self.film_index]
         try:
-            response = requests.get(film["poster"])
-            img = Image.open(BytesIO(response.content)).resize((100, 140))
-            qimage = ImageQt.ImageQt(img)
-            self.film_pixmap = QtGui.QPixmap.fromImage(qimage)
-            self.film_label.setPixmap(self.film_pixmap)
-        except:
-            self.film_label.setText("[Görsel Yok]")
+            response = requests.get(film["poster"], timeout=5)
+            image_data = response.content
+            image = Image.open(BytesIO(image_data)).resize((100, 140))
+            qimage = ImageQt.ImageQt(image)
+            pixmap = QtGui.QPixmap.fromImage(qimage)
+            self.poster_label.setPixmap(pixmap)
+        except Exception:
+            self.poster_label.setText("[Görsel Yok]")
 
         self.film_ad_label.setText(film["title"])
         self.film_overview_label.setText(film.get("overview", ""))

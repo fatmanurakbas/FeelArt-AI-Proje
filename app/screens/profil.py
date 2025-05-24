@@ -29,70 +29,75 @@ class ProfileScreen(QtWidgets.QWidget):
         self.init_ui()
 
     def init_ui(self):
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(10)
+        self.setFixedSize(420, 560)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        bg_path = os.path.join(current_dir, "FeelArt.png")
 
-        scroll_area = QtWidgets.QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_content = QtWidgets.QWidget()
-        scroll_layout = QtWidgets.QVBoxLayout(scroll_content)
+        # Background
+        self.bg_label = QtWidgets.QLabel(self)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 560)
 
+        # Foreground Container
+        self.container = QtWidgets.QWidget(self)
+        self.container.setGeometry(20, 20, 380, 520)
+        self.container.setStyleSheet("background-color: rgba(255, 255, 255, 200); border-radius: 20px;")
+
+        layout = QtWidgets.QVBoxLayout(self.container)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+
+        title = QtWidgets.QLabel("Profil")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        title.setStyleSheet("font: bold italic 24px 'Segoe UI'; color: #7b4caf;")
+        layout.addWidget(title)
+
+        # Avatar
         self.avatar_label = QtWidgets.QLabel()
-        scroll_layout.addWidget(self.avatar_label, alignment=QtCore.Qt.AlignCenter)
+        self.avatar_label.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self.avatar_label)
         self.update_avatar()
 
         select_btn = QtWidgets.QPushButton("Fotoğraf Seç")
         select_btn.clicked.connect(self.select_photo)
-        scroll_layout.addWidget(select_btn)
+        select_btn.setStyleSheet("padding: 6px; background-color: #f5e2a9; font-weight: bold; border-radius: 10px;")
+        layout.addWidget(select_btn)
 
-        title = QtWidgets.QLabel("Profil")
-        title.setAlignment(QtCore.Qt.AlignCenter)
-        title.setStyleSheet("font: bold 16px;")
-        scroll_layout.addWidget(title)
-
-        profile_box = QtWidgets.QGroupBox("Kullanıcı Bilgileri")
-        profile_layout = QtWidgets.QFormLayout(profile_box)
-
+        # User Info
+        form_layout = QtWidgets.QFormLayout()
         self.name_input = QtWidgets.QLineEdit(self.name)
         self.email_input = QtWidgets.QLineEdit(self.email)
-
-        profile_layout.addRow("Ad:", self.name_input)
-        profile_layout.addRow("E-posta:", self.email_input)
+        form_layout.addRow("Ad:", self.name_input)
+        form_layout.addRow("E-posta:", self.email_input)
+        layout.addLayout(form_layout)
 
         save_btn = QtWidgets.QPushButton("Profili Kaydet")
         save_btn.clicked.connect(self.save_profile)
-        profile_layout.addRow(save_btn)
+        save_btn.setStyleSheet("padding: 6px; background-color: #a782e6; color: white; font-weight: bold; border-radius: 10px;")
+        layout.addWidget(save_btn)
 
-        scroll_layout.addWidget(profile_box)
+        # Settings
+        settings_layout = QtWidgets.QVBoxLayout()
+        for text, handler in [("Şifre Değiştir", None), ("Dil Seçimi", None), ("Geçmişi Temizle", self.clear_history)]:
+            btn = QtWidgets.QPushButton(text)
+            if handler:
+                btn.clicked.connect(handler)
+            btn.setStyleSheet("padding: 6px; background-color: #f5e2a9; font-weight: bold; border-radius: 10px;")
+            settings_layout.addWidget(btn)
+        layout.addLayout(settings_layout)
 
-        settings_box = QtWidgets.QGroupBox("Ayarlar")
-        settings_layout = QtWidgets.QVBoxLayout(settings_box)
-
-        pw_btn = QtWidgets.QPushButton("Şifre Değiştir")
-        lang_btn = QtWidgets.QPushButton("Dil Seçimi")
-        clear_btn = QtWidgets.QPushButton("Geçmişi Temizle")
-        clear_btn.clicked.connect(self.clear_history)
-
-        settings_layout.addWidget(pw_btn)
-        settings_layout.addWidget(lang_btn)
-        settings_layout.addWidget(clear_btn)
-
-        scroll_layout.addWidget(settings_box)
-
+        # Navigation
         nav_layout = QtWidgets.QHBoxLayout()
         home_btn = QtWidgets.QPushButton("Ana Sayfa")
         logout_btn = QtWidgets.QPushButton("Çıkış")
+        home_btn.setStyleSheet("background-color: #f0d58c; color: #b4462b; font-weight: bold; border-radius: 8px;")
+        logout_btn.setStyleSheet("background-color: #f0d58c; color: #b4462b; font-weight: bold; border-radius: 8px;")
         home_btn.clicked.connect(self.go_home)
         logout_btn.clicked.connect(QtWidgets.qApp.quit)
         nav_layout.addWidget(home_btn)
         nav_layout.addStretch()
         nav_layout.addWidget(logout_btn)
-
-        scroll_layout.addLayout(nav_layout)
-
-        scroll_area.setWidget(scroll_content)
-        layout.addWidget(scroll_area)
+        layout.addLayout(nav_layout)
 
     def update_avatar(self):
         if self.profile_image_path and os.path.exists(self.profile_image_path):

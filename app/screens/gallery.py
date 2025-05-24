@@ -1,8 +1,11 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 import requests
 import uuid
+import os  # ✅ Bunu ekleyin
 from io import BytesIO
-from PIL import Image, ImageQt
+from PIL import Image
+from PIL import ImageQt
+
 
 class GalleryScreen(QtWidgets.QWidget):
     def __init__(self, stacked_widget=None, emotion_text="mutlu"):
@@ -17,26 +20,25 @@ class GalleryScreen(QtWidgets.QWidget):
         self.fetch_images()
 
     def init_ui(self):
-        self.setStyleSheet("background-color: #fffbe9;")
-        main_layout = QtWidgets.QVBoxLayout(self)
-        main_layout.setContentsMargins(10, 10, 10, 10)
-        main_layout.setSpacing(10)
+        self.setFixedSize(420, 560)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        bg_path = os.path.join(current_dir, "FeelArt.png")
 
-        # Üst çubuk
+        self.bg_label = QtWidgets.QLabel(self)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 560)
+
+        self.container = QtWidgets.QWidget(self)
+        self.container.setGeometry(15, 15, 390, 530)
+        self.container.setStyleSheet("background-color: rgba(255,255,255,200); border-radius: 20px;")
+
+        layout = QtWidgets.QVBoxLayout(self.container)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
+
         top_bar = QtWidgets.QHBoxLayout()
-
         back_btn = QtWidgets.QPushButton("←")
-        back_btn.setStyleSheet("""
-            QPushButton {
-                background-color: transparent;
-                border: none;
-                color: #b4462b;
-                font: bold 14px 'Arial';
-            }
-            QPushButton:hover {
-                color: #d65c37;
-            }
-        """)
+        back_btn.setStyleSheet("background-color: transparent; border: none; font: bold 16px; color: #b4462b;")
         back_btn.clicked.connect(self.go_back)
         top_bar.addWidget(back_btn, alignment=QtCore.Qt.AlignLeft)
 
@@ -44,21 +46,19 @@ class GalleryScreen(QtWidgets.QWidget):
         title.setStyleSheet("font: bold 14px 'Arial'; color: #b4462b;")
         title.setAlignment(QtCore.Qt.AlignCenter)
         top_bar.addWidget(title)
-
         top_bar.addStretch()
-        main_layout.addLayout(top_bar)
+        layout.addLayout(top_bar)
 
-        # Scrollable area
         self.scroll_area = QtWidgets.QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         scroll_content = QtWidgets.QWidget()
         self.scroll_layout = QtWidgets.QVBoxLayout(scroll_content)
         self.scroll_area.setWidget(scroll_content)
-        main_layout.addWidget(self.scroll_area)
+        layout.addWidget(self.scroll_area)
 
     def go_back(self):
         if self.stacked_widget:
-            self.stacked_widget.setCurrentIndex(2)  # örneğin MainScreen index 2
+            self.stacked_widget.setCurrentIndex(2)
 
     def fetch_images(self):
         try:
@@ -80,11 +80,11 @@ class GalleryScreen(QtWidgets.QWidget):
         try:
             img_data = requests.get(url).content
             img = Image.open(BytesIO(img_data)).resize((300, 180))
-            qimage = ImageQt.ImageQt(img)
+            qimage = ImageQt.ImageQt(img)  # ✅ BU KULLANIM DOĞRU
             pixmap = QtGui.QPixmap.fromImage(qimage)
 
             container = QtWidgets.QWidget()
-            container.setStyleSheet("background-color: #fffbe9;")
+            container.setStyleSheet("background-color: #fffbe9; border-radius: 12px;")
             vbox = QtWidgets.QVBoxLayout(container)
 
             img_label = QtWidgets.QLabel()
@@ -93,13 +93,12 @@ class GalleryScreen(QtWidgets.QWidget):
             vbox.addWidget(img_label)
 
             btn_box = QtWidgets.QHBoxLayout()
-
             like_btn = QtWidgets.QPushButton("❤️")
-            like_btn.setStyleSheet("background-color: transparent; border: none; font: 12px; color: #e0554a;")
+            like_btn.setStyleSheet("background-color: transparent; border: none; font: 14px; color: #e0554a;")
             like_btn.clicked.connect(lambda: self.like_image(url))
 
             save_btn = QtWidgets.QPushButton("🔖")
-            save_btn.setStyleSheet("background-color: transparent; border: none; font: 12px; color: #b4462b;")
+            save_btn.setStyleSheet("background-color: transparent; border: none; font: 14px; color: #b4462b;")
             save_btn.clicked.connect(lambda: self.save_image(url))
 
             btn_box.addWidget(like_btn)
