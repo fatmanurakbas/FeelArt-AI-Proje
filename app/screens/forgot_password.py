@@ -1,42 +1,96 @@
-import tkinter as tk
-from tkinter import messagebox
+from PyQt5 import QtWidgets, QtGui, QtCore
 
-class ForgotPasswordScreen(tk.Frame):
-    def __init__(self, master, controller):
-        super().__init__(master, bg="#fffbe9")
-        self.controller = controller
+from PyQt5 import QtWidgets, QtGui, QtCore
+import os
 
-        text_color = "#b4462b"
-        entry_bg = "#eba94d"
-        btn_bg1 = "#f5e2a9"
-        btn_text = "black"
+class ForgotPasswordScreen(QtWidgets.QWidget):
+    def __init__(self, stacked_widget):
+        super().__init__()
+        self.stacked_widget = stacked_widget
+        self.setFixedSize(420, 560)
+        self.setWindowTitle("FeelArt | Şifre Sıfırlama")
 
-        # Geri Dön Butonu
-        back_btn = tk.Button(self, text="←", font=("Arial", 12), bg="#fffbe9", fg=text_color, bd=0,
-                             command=lambda: controller.show_frame("LoginPanelScreen"))
-        back_btn.pack(anchor="w", padx=10, pady=5)
+        # 🌄 Arka plan resmi
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        bg_path = os.path.join(current_dir, "FeelArt.png")
+        self.bg_label = QtWidgets.QLabel(self)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 560)
 
-        # Başlık
-        title = tk.Label(self, text="Şifreni mi unuttun?", font=("Arial", 14, "bold"), fg=text_color, bg="#fffbe9")
-        title.pack(pady=(30, 10))
+        # 🪟 Saydam form kutusu
+        self.form = QtWidgets.QWidget(self)
+        self.form.setGeometry(40, 120, 340, 320)
+        self.form.setStyleSheet("background-color: rgba(255, 255, 255, 160); border-radius: 20px;")
 
-        info = tk.Label(self, text="E-posta adresini gir,\nşifre sıfırlama bağlantısı gönderilsin.",
-                        font=("Arial", 9), fg="gray", bg="#fffbe9")
-        info.pack(pady=(0, 20))
+        layout = QtWidgets.QVBoxLayout(self.form)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
 
-        # E-posta alanı
-        self.entry_email = tk.Entry(self, bg=entry_bg, relief="flat", font=("Arial", 10), width=28)
-        self.entry_email.pack(pady=(0, 20), ipady=5)
+        # ⬅️ Geri Butonu
+        back_btn = QtWidgets.QPushButton("←")
+        back_btn.setCursor(QtCore.Qt.PointingHandCursor)
+        back_btn.setStyleSheet("background-color: transparent; border: none; font: 16px 'Arial'; color: #b4462b;")
+        back_btn.clicked.connect(self.go_back)
+        layout.addWidget(back_btn, alignment=QtCore.Qt.AlignLeft)
 
-        # Gönder butonu
-        send_btn = tk.Button(self, text="Bağlantıyı Gönder", font=("Arial", 10, "bold"),
-                             bg=btn_bg1, fg=btn_text, bd=1, relief="ridge", width=20,
-                             command=self.send_reset_link)
-        send_btn.pack()
+        # 🔒 Başlık
+        title = QtWidgets.QLabel("Şifreni mi unuttun?")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        title.setStyleSheet("""
+            font-size: 20px;
+            font-weight: bold;
+            color: #7b4caf;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+        """)
+        layout.addWidget(title)
+
+        # 📝 Açıklama
+        info = QtWidgets.QLabel("E-posta adresini gir,\nşifre sıfırlama bağlantısı gönderilsin.")
+        info.setAlignment(QtCore.Qt.AlignCenter)
+        info.setStyleSheet("font: 12px 'Arial'; color: gray;")
+        layout.addWidget(info)
+
+        # ✉️ E-posta girişi
+        self.entry_email = QtWidgets.QLineEdit()
+        self.entry_email.setPlaceholderText("E-posta adresiniz")
+        self.entry_email.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border: none;
+                border-radius: 15px;
+                padding: 10px;
+                font-size: 13px;
+                color: #4d3f63;
+            }
+        """)
+        layout.addWidget(self.entry_email)
+
+        # 📤 Gönder Butonu
+        send_btn = QtWidgets.QPushButton("Bağlantıyı Gönder")
+        send_btn.setCursor(QtCore.Qt.PointingHandCursor)
+        send_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #a782e6;
+                color: white;
+                border: none;
+                border-radius: 18px;
+                padding: 10px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #9d6de0;
+            }
+        """)
+        send_btn.clicked.connect(self.send_reset_link)
+        layout.addWidget(send_btn)
+
+    def go_back(self):
+        self.stacked_widget.setCurrentIndex(1)  # LoginPanelScreen
 
     def send_reset_link(self):
-        email = self.entry_email.get()
+        email = self.entry_email.text().strip()
         if email:
-            messagebox.showinfo("Şifre Sıfırlama", f"{email} adresine şifre sıfırlama bağlantısı gönderildi!")
+            QtWidgets.QMessageBox.information(self, "Şifre Sıfırlama", f"{email} adresine bağlantı gönderildi!")
         else:
-            messagebox.showwarning("Eksik Bilgi", "Lütfen e-posta adresinizi girin.")
+            QtWidgets.QMessageBox.warning(self, "Eksik Bilgi", "Lütfen e-posta adresinizi girin.")

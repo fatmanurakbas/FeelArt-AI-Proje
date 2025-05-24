@@ -1,123 +1,131 @@
-import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk
+from PyQt5 import QtWidgets, QtGui, QtCore
 import requests
-import io
+import uuid
+import os  # ✅ Bunu ekleyin
+from io import BytesIO
+from PIL import Image
+from PIL import ImageQt
 
-class GalleryScreen(tk.Frame):
-    def __init__(self, master, controller, emotion_text="mutlu"):
-        super().__init__(master, bg="#fffbe9")
-        self.controller = controller
+
+class GalleryScreen(QtWidgets.QWidget):
+    def __init__(self, stacked_widget=None, emotion_text="mutlu"):
+        super().__init__()
+        self.stacked_widget = stacked_widget
         self.emotion = emotion_text
         self.images = []
         self.saved_images = []
         self.liked_images = []
-        self.create_scrollable_widgets()
+
+        self.init_ui()
         self.fetch_images()
 
-    def create_scrollable_widgets(self):
-        # Üst kısım (başlık ve geri tuşu)
-        top_frame = tk.Frame(self, bg="#fffbe9")
-        top_frame.pack(fill="x", pady=5)
+    def init_ui(self):
+        self.setFixedSize(420, 560)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        bg_path = os.path.join(current_dir, "FeelArt.png")
 
-        back_btn = tk.Button(top_frame, text="←", bg="#fffbe9", fg="#b4462b", font=("Arial", 10, "bold"), bd=0,
-                             command=lambda: self.controller.show_frame("MainScreen"))
-        back_btn.pack(side="left", padx=10)
+        self.bg_label = QtWidgets.QLabel(self)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 560)
 
-        title = tk.Label(
-            top_frame, text=f"'{self.emotion}' için sanat önerileri 🎨",
-            font=("Arial", 12, "bold"), bg="#fffbe9", fg="#b4462b", wraplength=250, justify="center"
-        )
-        title.pack(side="left", expand=True)
+        self.container = QtWidgets.QWidget(self)
+        self.container.setGeometry(15, 15, 390, 530)
+        self.container.setStyleSheet("background-color: rgba(255,255,255,200); border-radius: 20px;")
 
-        # Canvas + scrollbar + iç frame
-        self.canvas = tk.Canvas(self, bg="#fffbe9", highlightthickness=0)
-        self.scroll_y = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=self.scroll_y.set)
+        layout = QtWidgets.QVBoxLayout(self.container)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
 
-        self.scroll_y.pack(side="right", fill="y")
-        self.canvas.pack(side="left", fill="both", expand=True)
+        top_bar = QtWidgets.QHBoxLayout()
+        back_btn = QtWidgets.QPushButton("←")
+        back_btn.setStyleSheet("background-color: transparent; border: none; font: bold 16px; color: #b4462b;")
+        back_btn.clicked.connect(self.go_back)
+        top_bar.addWidget(back_btn, alignment=QtCore.Qt.AlignLeft)
 
-        self.inner_frame = tk.Frame(self.canvas, bg="#fffbe9")
-        self.canvas_window = self.canvas.create_window((0, 0), window=self.inner_frame, anchor="nw")
+        title = QtWidgets.QLabel(f"'{self.emotion}' için sanat önerileri")
+        title.setStyleSheet("font: bold 14px 'Arial'; color: #b4462b;")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        top_bar.addWidget(title)
+        top_bar.addStretch()
+        layout.addLayout(top_bar)
 
-        # İçeriği canvas'a göre genişlet
-        def on_canvas_configure(event):
-            self.canvas.itemconfig(self.canvas_window, width=event.width)
-        self.canvas.bind("<Configure>", on_canvas_configure)
+        self.scroll_area = QtWidgets.QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        scroll_content = QtWidgets.QWidget()
+        self.scroll_layout = QtWidgets.QVBoxLayout(scroll_content)
+        self.scroll_area.setWidget(scroll_content)
+        layout.addWidget(self.scroll_area)
 
-        # Scroll bölgesini güncelle
-        self.inner_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-
-        # Mouse scroll desteği
-        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
-
-    def _on_mousewheel(self, event):
-        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+    def go_back(self):
+        if self.stacked_widget:
+            self.stacked_widget.setCurrentIndex(2)
 
     def fetch_images(self):
         try:
-            response = requests.get(f"http://127.0.0.1:5000/api/images?query={self.emotion}")
+            response = requests.get(
+                "http://127.0.0.1:8000/api/images",
+                params={"query": self.emotion, "seed": str(uuid.uuid4())}
+            )
             if response.status_code == 200:
                 data = response.json()
                 image_urls = data.get('images', [])
-
                 for url in image_urls:
                     self.display_image(url)
             else:
-                messagebox.showerror("Hata", "Görseller alınamadı.")
+                self.add_error_label("Görseller alınamadı.")
         except Exception as e:
-            messagebox.showerror("Bağlantı Hatası", str(e))
+            self.add_error_label(f"Bağlantı hatası: {e}")
 
     def display_image(self, url):
         try:
             img_data = requests.get(url).content
-            img = Image.open(io.BytesIO(img_data))
-            img = img.resize((300, 180))
-            photo = ImageTk.PhotoImage(img)
-            self.images.append(photo)
+            img = Image.open(BytesIO(img_data)).resize((300, 180))
+            qimage = ImageQt.ImageQt(img)  # ✅ BU KULLANIM DOĞRU
+            pixmap = QtGui.QPixmap.fromImage(qimage)
 
-            container = tk.Frame(self.inner_frame, bg="#fffbe9")
-            container.pack(pady=10)
+            container = QtWidgets.QWidget()
+            container.setStyleSheet("background-color: #fffbe9; border-radius: 12px;")
+            vbox = QtWidgets.QVBoxLayout(container)
 
-            img_label = tk.Label(container, image=photo, bg="#fffbe9")
-            img_label.image = photo
-            img_label.pack()
+            img_label = QtWidgets.QLabel()
+            img_label.setPixmap(pixmap)
+            img_label.setAlignment(QtCore.Qt.AlignCenter)
+            vbox.addWidget(img_label)
 
-            btn_frame = tk.Frame(container, bg="#fffbe9")
-            btn_frame.pack(pady=2)
+            btn_box = QtWidgets.QHBoxLayout()
+            like_btn = QtWidgets.QPushButton("❤️")
+            like_btn.setStyleSheet("background-color: transparent; border: none; font: 14px; color: #e0554a;")
+            like_btn.clicked.connect(lambda: self.like_image(url))
 
-            like_btn = tk.Button(
-                btn_frame, text="❤️", bg="#fffbe9", fg="#e0554a", font=("Arial", 10), bd=0,
-                command=lambda u=url: self.like_image(u)
-            )
-            like_btn.pack(side="left", padx=5)
+            save_btn = QtWidgets.QPushButton("🔖")
+            save_btn.setStyleSheet("background-color: transparent; border: none; font: 14px; color: #b4462b;")
+            save_btn.clicked.connect(lambda: self.save_image(url))
 
-            save_btn = tk.Button(
-                btn_frame, text="🔖 Kaydet", bg="#fffbe9", fg="#b4462b", font=("Arial", 9, "bold"), bd=0,
-                command=lambda u=url: self.save_image(u)
-            )
-            save_btn.pack(side="left", padx=5)
+            btn_box.addWidget(like_btn)
+            btn_box.addWidget(save_btn)
+            vbox.addLayout(btn_box)
+
+            self.scroll_layout.addWidget(container)
+            self.images.append(pixmap)
 
         except Exception as e:
-            tk.Label(self.inner_frame, text=f"Hata: {e}", bg="#fffbe9", fg="red").pack()
+            self.add_error_label(f"Hata: {e}")
+
+    def add_error_label(self, text):
+        error_label = QtWidgets.QLabel(text)
+        error_label.setStyleSheet("color: red; font: 11px 'Arial';")
+        self.scroll_layout.addWidget(error_label)
 
     def save_image(self, url):
         if url not in self.saved_images:
             self.saved_images.append(url)
-            messagebox.showinfo("Kaydedildi", "Görsel kaydedildi.")
+            QtWidgets.QMessageBox.information(self, "Kaydedildi", "Görsel kaydedildi.")
         else:
-            messagebox.showwarning("Zaten kaydedilmiş", "Bu görsel zaten kaydedilmiş.")
-
-        if hasattr(self.controller.frames["BookmarksScreen"], "update_saved_images"):
-            self.controller.frames["BookmarksScreen"].update_saved_images(self.saved_images)
+            QtWidgets.QMessageBox.warning(self, "Zaten kaydedilmiş", "Bu görsel zaten kaydedilmiş.")
 
     def like_image(self, url):
         if url not in self.liked_images:
             self.liked_images.append(url)
-            messagebox.showinfo("Beğenildi", "Görsel beğenildi.")
+            QtWidgets.QMessageBox.information(self, "Beğenildi", "Görsel beğenildi.")
         else:
-            messagebox.showwarning("Zaten beğenilmiş", "Bu görsel zaten beğenilmiş.")
-
-        if hasattr(self.controller.frames["LikesScreen"], "update_liked_images"):
-            self.controller.frames["LikesScreen"].update_liked_images(self.liked_images)
+            QtWidgets.QMessageBox.warning(self, "Zaten beğenilmiş", "Bu görsel zaten beğenilmiş.")

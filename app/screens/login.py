@@ -1,52 +1,74 @@
-import tkinter as tk
-from tkinter import font
+from PyQt5 import QtWidgets, QtGui, QtCore
+import sys
+import os
+import subprocess
 
-class LoginScreen(tk.Frame):
-    def __init__(self, master, controller):
-        super().__init__(master)
-        self.configure(bg="#fbefff")  # Tatlı, pastel lavanta arka plan
+class LoginScreen(QtWidgets.QWidget):
+    def __init__(self, stacked_widget=None):
+        super().__init__()
+        self.stacked_widget = stacked_widget
+        self.setWindowTitle("FeelArt")
+        self.setFixedSize(420, 560)
 
-        # Başlık yazısı (koyu mor, büyük font)
-        try:
-            title_font = font.Font(family="Segoe Script", size=40, weight="bold")
-        except:
-            title_font = ("Arial", 32, "bold")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        bg_path = os.path.join(current_dir, "FeelArt.png")
 
-        tk.Label(self, text="FeelArt", font=title_font,
-                 fg="#4b296b", bg="#fbefff").pack(pady=(70, 40))
+        self.bg_label = QtWidgets.QLabel(self)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 560)
 
-        # Ortak buton stili
-        btn_common = {
-            "font": ("Arial", 12, "bold"),
-            "fg": "#ffffff",
-            "width": 20,
-            "height": 2,
-            "bd": 0,
-            "relief": "flat",
-            "cursor": "hand2",
-            "highlightthickness": 0
-        }
+        # Saydam kutu
+        self.form = QtWidgets.QWidget(self)
+        self.form.setGeometry(40, 160, 340, 250)
+        self.form.setStyleSheet("background-color: rgba(255, 255, 255, 160); border-radius: 20px;")
 
-        # Giriş Butonu (mor ton)
-        login_btn = tk.Button(self, text="Giriş Yap",
-                              command=lambda: controller.show_frame("LoginPanelScreen"),
-                              bg="#a86bd8", activebackground="#9e57d5", **btn_common)
-        login_btn.pack(pady=10)
-        self.make_rounded(login_btn)
+        layout = QtWidgets.QVBoxLayout(self.form)
+        layout.setSpacing(20)
 
-        # Kayıt Ol Butonu (pembe ton)
-        signup_btn = tk.Button(self, text="Kayıt Ol",
-                               command=lambda: controller.show_frame("SignupScreen"),
-                               bg="#db8adf", activebackground="#d073d4", **btn_common)
-        signup_btn.pack(pady=10)
-        self.make_rounded(signup_btn)
+        # Başlık
+        title = QtWidgets.QLabel("FeelArt")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        title.setStyleSheet("""
+            font-size: 40px;
+            font-weight: bold;
+            font-style: italic;
+            color: #7b4caf;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+        """)
+        layout.addWidget(title)
 
-        # Alt yazı
-        tk.Label(self, text="Sanatla hisset, kendini keşfet.",
-                 font=("Arial", 10, "italic"),
-                 fg="#7e6799", bg="#fbefff").pack(side="bottom", pady=30)
+        # Giriş Butonu
+        giris_btn = QtWidgets.QPushButton("Giriş Yap")
+        giris_btn.clicked.connect(self.goto_login)
+        giris_btn.setStyleSheet(self.button_style())
+        layout.addWidget(giris_btn)
 
-    def make_rounded(self, button):
-        """Tkinter'da oval buton desteği doğrudan yoktur, ama paddingle ve canvas üzerinden yapılabilir.
-           Burada sadece tasarım yumuşak dursun diye fonksiyon bırakılmıştır."""
-        button.configure(highlightbackground=button["bg"], pady=10, padx=5)
+        # Kayıt Butonu
+        kayit_btn = QtWidgets.QPushButton("Kayıt Ol")
+        kayit_btn.clicked.connect(self.goto_signup)
+        kayit_btn.setStyleSheet(self.button_style())
+        layout.addWidget(kayit_btn)
+
+    def button_style(self):
+        return """
+            QPushButton {
+                background-color: #a782e6;
+                color: white;
+                border: none;
+                border-radius: 18px;
+                padding: 10px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #9d6de0;
+            }
+        """
+
+    def goto_login(self):
+        if self.stacked_widget:
+            self.stacked_widget.setCurrentIndex(1)  # Giriş ekranı index
+
+    def goto_signup(self):
+        if self.stacked_widget:
+            self.stacked_widget.setCurrentIndex(4)  # Kayıt ekranı index

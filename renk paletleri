@@ -1,0 +1,20 @@
+# Ortak Renk Paleti (Görselinizdeki tonlara göre belirlenmiştir)
+# Bunları kodunuzda değişken olarak kullanacağız
+PALETTE = {
+    "lavender_bg": "#fbefff",        # Açılış ekranı arkaplanı
+    "dark_purple_text": "#4b296b",   # Başlıklar
+    "light_purple_text": "#7e6799",  # Alt yazılar, ikincil metinler
+    "purple_button": "#a86bd8",      # Açılış ekranı mor butonu
+    "purple_button_hover": "#9e57d5",# Mor buton üzerine gelindiğinde
+    "pink_button": "#db8adf",        # Açılış ekranı pembe butonu
+    "pink_button_hover": "#d073d4",  # Pembe buton üzerine gelindiğinde
+
+    "cream_bg": "#fffbe9",           # Giriş, Ana Ekran arkaplanı
+    "orange_brown_text": "#b4462b",  # Kahverengi-turuncu yazılar
+    "white_input_bg": "#ffffff",     # Giriş kutusu arkaplanı
+    "peach_button": "#f5e2a9",       # Ana ekran butonları, sidebar arkaplanı
+    "peach_button_hover": "#ebd08f", # Şeftali butonu üzerine gelindiğinde
+    "yellow_accent": "#f0d58c",      # Sohbet çerçevesi, ayırıcı çizgiler
+    "light_gray_text": "gray",       # İkincil gri yazılar
+    "dark_gray_text": "gray30",      # Açıklama metinleri
+}

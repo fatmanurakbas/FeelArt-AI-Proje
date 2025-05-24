@@ -1,200 +1,141 @@
-import tkinter as tk
-from PIL import Image, ImageTk
+from PyQt5 import QtWidgets, QtGui, QtCore
 import requests
+from PIL import Image
 from io import BytesIO
+import os
+from PIL import Image
+from PIL import ImageQt
+class OneriPaneliScreen(QtWidgets.QWidget):
+    def __init__(self, stacked_widget=None, emotion="mutlu"):
+        super().__init__()
+        self.stacked_widget = stacked_widget
+        self.emotion = emotion
+        self.film_index = 0
+        self.filmler = []
 
-# Öneri listeleri
-film_önerileri = [
-    {
-        "isim": "Stranger Things",
-        "ülke": "USA, 2016 - Current",
-        "puan": "8.6 / 10",
-        "görsel": "https://upload.wikimedia.org/wikipedia/en/f/f7/Stranger_Things_season_4.jpg"
-    },
-    {
-        "isim": "Inside Out",
-        "ülke": "USA, 2015",
-        "puan": "8.1 / 10",
-        "görsel": "https://upload.wikimedia.org/wikipedia/en/0/0a/Inside_Out_%282015_film%29_poster.jpg"
-    }
-]
+        self.init_ui()
+        self.load_filmler()
 
-kitap_önerileri = [
-    {
-        "isim": "The Art of Happiness",
-        "yazar": "Dalai Lama",
-        "görsel": "https://m.media-amazon.com/images/I/41j9pWb6V2L.jpg"
-    },
-    {
-        "isim": "Emotional Intelligence",
-        "yazar": "Daniel Goleman",
-        "görsel": "https://m.media-amazon.com/images/I/41GDikzI7PL.jpg"
-    }
-]
+    def init_ui(self):
+        self.setFixedSize(420, 560)
 
-film_index = 0
-kitap_index = 0
-film_begeni = False
-film_kayit = False
-kitap_begeni = False
-kitap_kayit = False
+        # === Arka plan görseli ===
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        bg_path = os.path.join(current_dir, "FeelArt.png")
+        self.bg_label = QtWidgets.QLabel(self)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 560)
 
-def center_window(window, width=320, height=620):
-    screen_width = window.winfo_screenwidth()
-    screen_height = window.winfo_screenheight()
-    x = 100
-    y = int((screen_height / 2) - (height / 2))
-    window.geometry(f"{width}x{height}+{x}+{y}")
+        # === Beyaz cam kutu ===
+        self.container = QtWidgets.QWidget(self)
+        self.container.setGeometry(15, 15, 390, 530)
+        self.container.setStyleSheet("background-color: rgba(255, 255, 255, 200); border-radius: 20px;")
 
-# ---- Film Fonksiyonları ----
-def guncelle_film():
-    global film_imgtk
-    film = film_önerileri[film_index]
-    try:
-        response = requests.get(film["görsel"])
-        img = Image.open(BytesIO(response.content)).resize((100, 140))
-        film_imgtk = ImageTk.PhotoImage(img)
-        film_label.config(image=film_imgtk)
-    except:
-        film_label.config(text="[Görsel Yok]", font=("Arial", 10), image="", width=12, height=8)
+        layout = QtWidgets.QVBoxLayout(self.container)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(12)
 
-    film_ad_label.config(text=film["isim"])
-    film_puan_label.config(text=f"IMDb: {film['puan']}")
-    film_ülke_label.config(text=film["ülke"])
-    film_begeni_btn.config(text="❤️" if film_begeni else "🤍")
-    film_kayit_btn.config(text="🔖" if film_kayit else "📑")
+        # === Geri butonu ===
+        back_btn = QtWidgets.QPushButton("← Geri")
+        back_btn.setStyleSheet("background-color: transparent; color: #b4462b; font: bold 12px 'Arial'; border: none;")
+        back_btn.clicked.connect(self.go_back)
+        layout.addWidget(back_btn, alignment=QtCore.Qt.AlignLeft)
 
-def ileri_film():
-    global film_index
-    film_index = (film_index + 1) % len(film_önerileri)
-    guncelle_film()
+        # === Başlık ===
+        title = QtWidgets.QLabel("Film Serisi")
+        title.setAlignment(QtCore.Qt.AlignCenter)
+        title.setStyleSheet("font: bold 20px 'Brush Script MT'; color: #b4462b;")
+        layout.addWidget(title)
 
-def geri_film():
-    global film_index
-    film_index = (film_index - 1) % len(film_önerileri)
-    guncelle_film()
+        # === Film görseli ===
+        self.poster_label = QtWidgets.QLabel("[Görsel Yok]")
+        self.poster_label.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self.poster_label)
 
-def toggle_film_begeni():
-    global film_begeni
-    film_begeni = not film_begeni
-    film_begeni_btn.config(text="❤️" if film_begeni else "🤍")
+        # === Film adı ===
+        self.film_ad_label = QtWidgets.QLabel("")
+        self.film_ad_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.film_ad_label.setStyleSheet("font: bold 11px 'Arial'; color: #b4462b;")
+        layout.addWidget(self.film_ad_label)
 
-def toggle_film_kayit():
-    global film_kayit
-    film_kayit = not film_kayit
-    film_kayit_btn.config(text="🔖" if film_kayit else "📑")
+        # === Film açıklama ===
+        self.film_overview_label = QtWidgets.QLabel("")
+        self.film_overview_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.film_overview_label.setWordWrap(True)
+        self.film_overview_label.setStyleSheet("font: 10px 'Arial'; color: #333;")
+        layout.addWidget(self.film_overview_label)
 
-# ---- Kitap Fonksiyonları ----
-def guncelle_kitap():
-    global kitap_imgtk
-    kitap = kitap_önerileri[kitap_index]
-    try:
-        response = requests.get(kitap["görsel"])
-        img = Image.open(BytesIO(response.content)).resize((100, 140))
-        kitap_imgtk = ImageTk.PhotoImage(img)
-        kitap_label.config(image=kitap_imgtk)
-    except:
-        kitap_label.config(text="[Görsel Yok]", font=("Arial", 10), image="", width=12, height=8)
+        # === Navigasyon butonları ===
+        nav_layout = QtWidgets.QHBoxLayout()
 
-    kitap_ad_label.config(text=kitap["isim"])
-    kitap_yazar_label.config(text=kitap["yazar"])
-    kitap_begeni_btn.config(text="❤️" if kitap_begeni else "🤍")
-    kitap_kayit_btn.config(text="🔖" if kitap_kayit else "📑")
+        self.left_btn = QtWidgets.QPushButton("⟨")
+        self.right_btn = QtWidgets.QPushButton("⟩")
 
-def ileri_kitap():
-    global kitap_index
-    kitap_index = (kitap_index + 1) % len(kitap_önerileri)
-    guncelle_kitap()
+        for btn in [self.left_btn, self.right_btn]:
+            btn.setFixedSize(30, 30)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #f5e2a9;
+                    font: bold 14px 'Arial';
+                    color: #b4462b;
+                    border-radius: 15px;
+                }
+                QPushButton:hover {
+                    background-color: #f0d58c;
+                }
+            """)
 
-def geri_kitap():
-    global kitap_index
-    kitap_index = (kitap_index - 1) % len(kitap_önerileri)
-    guncelle_kitap()
+        self.left_btn.clicked.connect(self.geri_film)
+        self.right_btn.clicked.connect(self.ileri_film)
 
-def toggle_kitap_begeni():
-    global kitap_begeni
-    kitap_begeni = not kitap_begeni
-    kitap_begeni_btn.config(text="❤️" if kitap_begeni else "🤍")
+        nav_layout.addWidget(self.left_btn)
+        nav_layout.addStretch()
+        nav_layout.addWidget(self.right_btn)
 
-def toggle_kitap_kayit():
-    global kitap_kayit
-    kitap_kayit = not kitap_kayit
-    kitap_kayit_btn.config(text="🔖" if kitap_kayit else "📑")
+        layout.addLayout(nav_layout)
 
-# ---- Arayüz Başlangıcı ----
-root = tk.Tk()
-center_window(root)
-root.title("Duyguya Göre Öneriler")
-root.configure(bg="#fffbe9")
+    def go_back(self):
+        if self.stacked_widget:
+            self.stacked_widget.setCurrentIndex(2)
 
-# --- Film Serisi ---
-film_baslik = tk.Label(root, text="film serisi", font=("Brush Script MT", 18), bg="#f0d58c", fg="#b4462b")
-film_baslik.pack(fill="x", pady=(0, 5))
+    def load_filmler(self):
+        try:
+            response = requests.get("http://127.0.0.1:8000/api/recommendations", params={"emotion": self.emotion})
+            response.raise_for_status()
+            data = response.json()
+            self.filmler = data.get("recommendations", [])
+            self.guncelle_film()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Hata", f"Film önerileri alınamadı:\n{e}")
+            self.filmler = []
 
-film_frame = tk.Frame(root, bg="#fffbe9")
-film_frame.pack()
+    def guncelle_film(self):
+        if not self.filmler:
+            self.film_ad_label.setText("Film bulunamadı.")
+            self.film_overview_label.setText("")
+            self.poster_label.setText("[Görsel Yok]")
+            return
 
-tk.Button(film_frame, text="‹", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0, command=geri_film).pack(side="left", padx=5)
+        film = self.filmler[self.film_index]
+        try:
+            response = requests.get(film["poster"], timeout=5)
+            image_data = response.content
+            image = Image.open(BytesIO(image_data)).resize((100, 140))
+            qimage = ImageQt.ImageQt(image)
+            pixmap = QtGui.QPixmap.fromImage(qimage)
+            self.poster_label.setPixmap(pixmap)
+        except Exception:
+            self.poster_label.setText("[Görsel Yok]")
 
-film_content = tk.Frame(film_frame, bg="#fffbe9")
-film_content.pack(side="left", pady=10)
+        self.film_ad_label.setText(film["title"])
+        self.film_overview_label.setText(film.get("overview", ""))
 
-film_label = tk.Label(film_content, bg="#fffbe9")
-film_label.pack()
+    def ileri_film(self):
+        if self.filmler:
+            self.film_index = (self.film_index + 1) % len(self.filmler)
+            self.guncelle_film()
 
-film_puan_label = tk.Label(film_content, font=("Arial", 8), bg="#fffbe9", fg="black")
-film_puan_label.pack()
-
-film_ad_label = tk.Label(film_content, font=("Arial", 9, "bold"), bg="#fffbe9", fg="black")
-film_ad_label.pack()
-
-film_ülke_label = tk.Label(film_content, font=("Arial", 8), bg="#fffbe9", fg="gray")
-film_ülke_label.pack()
-
-film_button_frame = tk.Frame(film_content, bg="#fffbe9")
-film_button_frame.pack(pady=4)
-
-film_begeni_btn = tk.Button(film_button_frame, text="🤍", font=("Arial", 10), bg="#fffbe9", fg="red", bd=0, command=toggle_film_begeni)
-film_begeni_btn.pack(side="left", padx=5)
-
-film_kayit_btn = tk.Button(film_button_frame, text="📑", font=("Arial", 10), bg="#fffbe9", fg="orange", bd=0, command=toggle_film_kayit)
-film_kayit_btn.pack(side="left", padx=5)
-
-tk.Button(film_frame, text="›", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0, command=ileri_film).pack(side="left", padx=5)
-
-# --- Kitap Serisi ---
-kitap_baslik = tk.Label(root, text="kitap serisi", font=("Brush Script MT", 18), bg="#f0d58c", fg="#b4462b")
-kitap_baslik.pack(fill="x", pady=(15, 5))
-
-kitap_frame = tk.Frame(root, bg="#fffbe9")
-kitap_frame.pack()
-
-tk.Button(kitap_frame, text="‹", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0, command=geri_kitap).pack(side="left", padx=5)
-
-kitap_content = tk.Frame(kitap_frame, bg="#fffbe9")
-kitap_content.pack(side="left", pady=10)
-
-kitap_label = tk.Label(kitap_content, bg="#fffbe9")
-kitap_label.pack()
-
-kitap_ad_label = tk.Label(kitap_content, font=("Arial", 9, "bold"), bg="#fffbe9", fg="black")
-kitap_ad_label.pack()
-
-kitap_yazar_label = tk.Label(kitap_content, font=("Arial", 8), bg="#fffbe9", fg="gray")
-kitap_yazar_label.pack()
-
-kitap_button_frame = tk.Frame(kitap_content, bg="#fffbe9")
-kitap_button_frame.pack(pady=4)
-
-kitap_begeni_btn = tk.Button(kitap_button_frame, text="🤍", font=("Arial", 10), bg="#fffbe9", fg="red", bd=0, command=toggle_kitap_begeni)
-kitap_begeni_btn.pack(side="left", padx=5)
-
-kitap_kayit_btn = tk.Button(kitap_button_frame, text="📑", font=("Arial", 10), bg="#fffbe9", fg="orange", bd=0, command=toggle_kitap_kayit)
-kitap_kayit_btn.pack(side="left", padx=5)
-
-tk.Button(kitap_frame, text="›", font=("Arial", 12), bg="#fffbe9", fg="#b4462b", bd=0, command=ileri_kitap).pack(side="left", padx=5)
-
-# Başlat
-guncelle_film()
-guncelle_kitap()
-root.mainloop()
+    def geri_film(self):
+        if self.filmler:
+            self.film_index = (self.film_index - 1) % len(self.filmler)
+            self.guncelle_film()
