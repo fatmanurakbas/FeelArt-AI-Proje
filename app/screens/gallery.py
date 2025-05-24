@@ -1,11 +1,8 @@
-from PyQt5 import QtWidgets, QtGui, QtCore
-import requests
+import os
 import uuid
-import os  # ✅ Bunu ekleyin
+import requests
 from io import BytesIO
-from PIL import Image
-from PIL import ImageQt
-
+from PyQt5 import QtWidgets, QtGui, QtCore
 
 class GalleryScreen(QtWidgets.QWidget):
     def __init__(self, stacked_widget=None, emotion_text="mutlu"):
@@ -79,9 +76,9 @@ class GalleryScreen(QtWidgets.QWidget):
     def display_image(self, url):
         try:
             img_data = requests.get(url).content
-            img = Image.open(BytesIO(img_data)).resize((300, 180))
-            qimage = ImageQt.ImageQt(img)  # ✅ BU KULLANIM DOĞRU
-            pixmap = QtGui.QPixmap.fromImage(qimage)
+            image = QtGui.QImage()
+            image.loadFromData(img_data)
+            pixmap = QtGui.QPixmap.fromImage(image).scaled(300, 180, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
 
             container = QtWidgets.QWidget()
             container.setStyleSheet("background-color: #fffbe9; border-radius: 12px;")
