@@ -24,26 +24,32 @@ class MainScreen(QtWidgets.QWidget):
         self.sidebar_frame.setGeometry(-200, 0, 200, 560)
         self.sidebar_frame.setStyleSheet("background-color: rgba(245, 245, 245, 245); border-right: 2px solid #ccc;")
 
-        self.sidebar_layout = QtWidgets.QVBoxLayout(self.sidebar_frame)
-        self.sidebar_layout.setContentsMargins(12, 20, 12, 20)
-        self.sidebar_layout.setSpacing(12)
+        sidebar_layout = QtWidgets.QVBoxLayout(self.sidebar_frame)
+        sidebar_layout.setContentsMargins(8, 8, 8, 8)
+        sidebar_layout.setSpacing(5)
 
-        # Close Button inside Sidebar
+        # Top bar with menu button and title
+        top_bar = QtWidgets.QHBoxLayout()
         self.close_btn = QtWidgets.QPushButton("≡")
-        self.close_btn.setStyleSheet("background-color: transparent; font: bold 14px 'Arial'; color: #7b4caf;")
+        self.close_btn.setStyleSheet("background-color: transparent; font: bold 14px 'Arial'; color: #7b4caf; border: none;")
         self.close_btn.clicked.connect(self.toggle_sidebar)
-        self.sidebar_layout.addWidget(self.close_btn, alignment=QtCore.Qt.AlignLeft)
+        top_bar.addWidget(self.close_btn, alignment=QtCore.Qt.AlignLeft)
 
-        self.sidebar_title = QtWidgets.QLabel("Sohbet Geçmişi")
-        self.sidebar_title.setStyleSheet("font-weight: bold; color: #7b4caf; font: 13px 'Arial';")
-        self.sidebar_layout.addWidget(self.sidebar_title)
+        sidebar_title = QtWidgets.QLabel("Sohbet Geçmişi")
+        sidebar_title.setStyleSheet("font-weight: bold; color: #7b4caf; font: 13px 'Arial';")
+        top_bar.addWidget(sidebar_title)
+        top_bar.addStretch()
+        sidebar_layout.addLayout(top_bar)
 
+        # Scroll area for history
         self.history_scroll = QtWidgets.QScrollArea()
         self.history_scroll.setWidgetResizable(True)
+        self.history_scroll.setStyleSheet("background-color: transparent; border: none;")
         self.history_inner = QtWidgets.QWidget()
         self.history_vlayout = QtWidgets.QVBoxLayout(self.history_inner)
+        self.history_vlayout.setSpacing(2)  # Yazılar arası boşluğu azalttık
         self.history_scroll.setWidget(self.history_inner)
-        self.sidebar_layout.addWidget(self.history_scroll)
+        sidebar_layout.addWidget(self.history_scroll)
 
         self.load_history()
 
@@ -56,18 +62,18 @@ class MainScreen(QtWidgets.QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(15)
 
-        # Top Bar
+        # Top bar
         top_bar = QtWidgets.QHBoxLayout()
         self.menu_btn = QtWidgets.QPushButton("≡")
         self.menu_btn.setFixedWidth(30)
-        self.menu_btn.setStyleSheet("background-color: transparent; font: bold 16px 'Arial'; color: #7b4caf;")
+        self.menu_btn.setStyleSheet("background-color: transparent; font: bold 16px 'Arial'; color: #7b4caf; border: none;")
         self.menu_btn.clicked.connect(self.toggle_sidebar)
         top_bar.addWidget(self.menu_btn)
 
         top_bar.addStretch()
         profile_btn = QtWidgets.QPushButton("👤")
         profile_btn.setFixedWidth(30)
-        profile_btn.setStyleSheet("background-color: transparent; font: 14px 'Arial'; color: #7b4caf;")
+        profile_btn.setStyleSheet("background-color: transparent; font: 14px 'Arial'; color: #7b4caf; border: none;")
         profile_btn.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(9))
         top_bar.addWidget(profile_btn)
         main_layout.addLayout(top_bar)
@@ -124,6 +130,7 @@ class MainScreen(QtWidgets.QWidget):
         else:
             anim.setStartValue(QtCore.QRect(-200, 0, 200, 560))
             anim.setEndValue(QtCore.QRect(0, 0, 200, 560))
+            self.sidebar_frame.raise_()  # Kartların üstüne çıkar
         anim.start()
         self.sidebar_open = not self.sidebar_open
         self.anim = anim
@@ -167,27 +174,53 @@ class MainScreen(QtWidgets.QWidget):
         self.search_entry.clear()
 
     def load_history(self):
-        for l in self.history_labels:
-            l.setParent(None)
+        for w in self.history_labels:
+            w.setParent(None)
         self.history_labels.clear()
         try:
             with open("user_data.json", "r", encoding="utf-8") as f:
                 items = json.load(f).get("history", [])
         except:
             items = []
-        for item in items:
-            lbl = QtWidgets.QLabel(f"• {item}")
-            lbl.setStyleSheet("color: black; font: 11px 'Arial'; padding: 2px;")
-            lbl.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-            lbl.mousePressEvent = lambda e, t=item: self.open_gallery_from_history(t)
-            self.history_vlayout.addWidget(lbl)
-            self.history_labels.append(lbl)
 
-    def open_gallery_from_history(self, emotion_text):
+        for item in items:
+            frame = QtWidgets.QFrame()
+            frame.setFixedHeight(40)  # Kart yüksekliği daha az
+            frame.setStyleSheet("""
+            QFrame {
+                background-color: rgba(167, 130, 230, 50);
+                border: 1px solid #a782e6;
+                border-radius: 6px;
+                margin: 4px 2px;
+            }
+            QFrame:hover {
+                background-color: rgba(167, 130, 230, 100);
+            }
+        """)
+            frame_layout = QtWidgets.QHBoxLayout(frame)
+            frame_layout.setContentsMargins(8, 0, 8, 0)  # Üst-alt boşlukları da azalt
+            frame_layout.setSpacing(5)
+
+            lbl = QtWidgets.QLabel(item)
+            lbl.setStyleSheet("color: #4a1c82; font: 11px 'Arial';")
+            lbl.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft)
+            lbl.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            lbl.mousePressEvent = lambda e, t=item, f=frame: self.open_gallery_from_history(t, f)
+            frame_layout.addWidget(lbl)
+
+            self.history_vlayout.addWidget(frame)
+            self.history_labels.append(frame)
+
+
+    def open_gallery_from_history(self, emotion_text, label_widget):
+        # Tıklanınca galeriyi aç
         g = GalleryScreen(self.stacked_widget, emotion_text)
         self.stacked_widget.addWidget(g)
         self.stacked_widget.setCurrentWidget(g)
         self.search_entry.clear()
+
+        # Sidebar scroll'unu tıklanan label'a odakla
+        QtCore.QTimer.singleShot(100, lambda: self.history_scroll.ensureWidgetVisible(label_widget))
 
     def get_recommendations(self):
         txt = self.search_entry.text().strip()

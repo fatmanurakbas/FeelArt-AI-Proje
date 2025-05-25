@@ -5,9 +5,10 @@ from io import BytesIO
 from PyQt5 import QtWidgets, QtGui, QtCore
 
 class GalleryScreen(QtWidgets.QWidget):
-    def __init__(self, stacked_widget=None, emotion_text="mutlu"):
+    def __init__(self, stacked_widget=None, main_window=None, emotion_text="mutlu"):
         super().__init__()
         self.stacked_widget = stacked_widget
+        self.main_window = main_window
         self.emotion = emotion_text
         self.images = []
         self.saved_images = []
@@ -15,6 +16,8 @@ class GalleryScreen(QtWidgets.QWidget):
 
         self.init_ui()
         self.fetch_images()
+
+
 
     def init_ui(self):
         self.setFixedSize(420, 560)
@@ -39,8 +42,8 @@ class GalleryScreen(QtWidgets.QWidget):
         back_btn.clicked.connect(self.go_back)
         top_bar.addWidget(back_btn, alignment=QtCore.Qt.AlignLeft)
 
-        title = QtWidgets.QLabel(f"'{self.emotion}' için sanat önerileri")
-        title.setStyleSheet("font: bold 14px 'Arial'; color: #b4462b;")
+        title = QtWidgets.QLabel("Sanat Galerisi")
+        title.setStyleSheet("font: bold 16px 'Arial'; color: #b4462b;")
         title.setAlignment(QtCore.Qt.AlignCenter)
         top_bar.addWidget(title)
         top_bar.addStretch()
@@ -62,6 +65,7 @@ class GalleryScreen(QtWidgets.QWidget):
             response = requests.get(
                 "http://127.0.0.1:8000/api/images",
                 params={"query": self.emotion, "seed": str(uuid.uuid4())}
+
             )
             if response.status_code == 200:
                 data = response.json()
@@ -114,15 +118,29 @@ class GalleryScreen(QtWidgets.QWidget):
         self.scroll_layout.addWidget(error_label)
 
     def save_image(self, url):
-        if url not in self.saved_images:
-            self.saved_images.append(url)
+        if self.main_window is None:
+            QtWidgets.QMessageBox.warning(self, "Hata", "Ana pencere tanımlı değil.")
+            return
+
+        if url not in self.main_window.saved_images:
+            self.main_window.saved_images.append(url)
             QtWidgets.QMessageBox.information(self, "Kaydedildi", "Görsel kaydedildi.")
+
+        # Kaydedilenler ekranı varsa güncelle
+            if hasattr(self.main_window, "bookmarks_screen") and self.main_window.bookmarks_screen:
+                self.main_window.bookmarks_screen.update_saved_images(self.main_window.saved_images)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Hata", "Bookmarks ekranı tanımlı değil.")
         else:
             QtWidgets.QMessageBox.warning(self, "Zaten kaydedilmiş", "Bu görsel zaten kaydedilmiş.")
 
     def like_image(self, url):
-        if url not in self.liked_images:
-            self.liked_images.append(url)
-            QtWidgets.QMessageBox.information(self, "Beğenildi", "Görsel beğenildi.")
+        if self.main_window and hasattr(self.main_window, "liked_images"):
+            if url not in self.main_window.liked_images:
+                self.main_window.liked_images.append(url)
+                QtWidgets.QMessageBox.information(self, "Beğenildi", "Görsel beğenildi.")
+                self.main_window.likes_screen.update_liked_images(self.main_window.liked_images)
+            else:
+                QtWidgets.QMessageBox.warning(self, "Zaten beğenilmiş", "Bu görsel zaten beğenilmiş.")
         else:
-            QtWidgets.QMessageBox.warning(self, "Zaten beğenilmiş", "Bu görsel zaten beğenilmiş.")
+            QtWidgets.QMessageBox.warning(self, "Hata", "Ana pencere tanımlı değil.")

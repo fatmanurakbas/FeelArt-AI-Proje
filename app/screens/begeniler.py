@@ -4,9 +4,10 @@ from io import BytesIO
 from PIL import Image, ImageQt
 
 class LikesScreen(QtWidgets.QWidget):
-    def __init__(self, stacked_widget=None):
+    def __init__(self, stacked_widget=None, main_window=None):
         super().__init__()
         self.stacked_widget = stacked_widget
+        self.main_window = main_window
         self.liked_images = []
         self.images = []
         self.init_ui()
@@ -84,6 +85,6 @@ class LikesScreen(QtWidgets.QWidget):
                 self.scroll_layout.addWidget(error_label)
 
     def remove_liked_image(self, url):
-        if url in self.liked_images:
-            self.liked_images.remove(url)
-            self.update_liked_images(self.liked_images)
+        if url in self.main_window.liked_images:
+            self.main_window.liked_images.remove(url)
+            self.update_liked_images(self.main_window.liked_images)

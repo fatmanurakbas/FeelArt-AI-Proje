@@ -4,9 +4,10 @@ from io import BytesIO
 from PIL import Image, ImageQt
 
 class BookmarksScreen(QtWidgets.QWidget):
-    def __init__(self, stacked_widget=None):
+    def __init__(self, stacked_widget=None, main_window=None):
         super().__init__()
         self.stacked_widget = stacked_widget
+        self.main_window = main_window
         self.saved_images = []
         self.images = []
         self.init_ui()
@@ -94,6 +95,6 @@ class BookmarksScreen(QtWidgets.QWidget):
                 self.scroll_layout.addWidget(error_label)
 
     def remove_saved_image(self, url):
-        if url in self.saved_images:
-            self.saved_images.remove(url)
-            self.update_saved_images(self.saved_images)
+        if url in self.main_window.saved_images:
+            self.main_window.saved_images.remove(url)
+            self.update_saved_images(self.main_window.saved_images)

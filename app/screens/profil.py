@@ -18,11 +18,12 @@ def save_user_data(data):
         json.dump(data, f, indent=4)
 
 class ProfileScreen(QtWidgets.QWidget):
-    def __init__(self, stacked_widget=None):
+    def __init__(self, stacked_widget=None, main_window=None):
         super().__init__()
         self.stacked_widget = stacked_widget
         self.data = load_user_data()
-
+        self.stacked_widget = stacked_widget
+        self.main_window = main_window
         self.name = self.data.get("name", "")
         self.email = self.data.get("email", "")
         self.profile_image_path = self.data.get("profile_image", "")
@@ -176,6 +177,7 @@ class ProfileScreen(QtWidgets.QWidget):
     def clear_history(self):
         self.data["history"] = []
         save_user_data(self.data)
+        self.main_window.main_screen.load_history()
         QMessageBox.information(self, "Geçmiş Silindi", "Tüm geçmiş başarıyla temizlendi.")
 
     def go_home(self):
