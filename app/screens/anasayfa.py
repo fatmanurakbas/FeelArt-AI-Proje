@@ -10,6 +10,7 @@ class MainScreen(QtWidgets.QWidget):
         self.stacked_widget = stacked_widget
         self.sidebar_open = False
         self.history_labels = []
+        
 
         self.setFixedSize(420, 560)
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -168,7 +169,7 @@ class MainScreen(QtWidgets.QWidget):
         with open("user_data.json", "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
         self.load_history()
-        g = GalleryScreen(self.stacked_widget, text)
+        g = GalleryScreen(stacked_widget=self.stacked_widget, main_window=self.stacked_widget, emotion_text=text)
         self.stacked_widget.addWidget(g)
         self.stacked_widget.setCurrentWidget(g)
         self.search_entry.clear()
@@ -214,7 +215,8 @@ class MainScreen(QtWidgets.QWidget):
 
     def open_gallery_from_history(self, emotion_text, label_widget):
         # Tıklanınca galeriyi aç
-        g = GalleryScreen(self.stacked_widget, emotion_text)
+        g = GalleryScreen(stacked_widget=self.stacked_widget, main_window=self.stacked_widget, emotion_text=emotion_text)
+        self.stacked_widget.addWidget(g)
         self.stacked_widget.addWidget(g)
         self.stacked_widget.setCurrentWidget(g)
         self.search_entry.clear()

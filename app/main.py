@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QStackedWidget
+from PyQt5.QtWidgets import QApplication, QStackedWidget, QMessageBox
 from screens.login import LoginScreen
 from screens.loginpanel import LoginPanelScreen
 from screens.signup_screen import SignupScreen
@@ -9,7 +9,8 @@ from screens.oneripaneli import OneriPaneliScreen
 from screens.kaydedilenler import BookmarksScreen
 from screens.begeniler import LikesScreen
 from screens.profil import ProfileScreen
-from PyQt5.QtWidgets import QMessageBox
+import json
+import os
 
 class MainApp(QStackedWidget):
     def __init__(self):
@@ -21,21 +22,21 @@ class MainApp(QStackedWidget):
         self.saved_images = []
         self.liked_images = []
 
+        # JSON verilerini yükle
+        self.load_data()
+
         # Ekranları oluştur ve referans vererek sırayla ekle
         self.login_screen = LoginScreen(self)
         self.login_panel_screen = LoginPanelScreen(self)
         self.signup_screen = SignupScreen(self)
         self.forgot_password_screen = ForgotPasswordScreen(self)
         self.main_screen = MainScreen(self)
-        self.gallery_screen = GalleryScreen(self, self)
+        self.gallery_screen = GalleryScreen(stacked_widget=self, main_window=self, emotion_text="mutlu")
         self.oneri_screen = OneriPaneliScreen(self)
         self.bookmarks_screen = BookmarksScreen(self, self)
         self.likes_screen = LikesScreen(self, self)
-        self.profile_screen = ProfileScreen(self)
         self.profile_screen = ProfileScreen(self, self)
 
-
-         
         # Stack içine ekle
         self.addWidget(self.login_screen)            # index 0
         self.addWidget(self.login_panel_screen)      # index 1
@@ -47,21 +48,38 @@ class MainApp(QStackedWidget):
         self.addWidget(self.bookmarks_screen)        # index 7
         self.addWidget(self.likes_screen)            # index 8
         self.addWidget(self.profile_screen)          # index 9
-        
+
+        # Başlangıç ekranı
         self.setCurrentWidget(self.login_screen)
+
+    def load_data(self):
+        try:
+            with open("user_data.json", "r", encoding="utf-8") as f:
+                data = json.load(f)
+                self.saved_images = data.get("saved_images", [])
+                self.liked_images = data.get("liked_images", [])
+        except FileNotFoundError:
+            # Dosya yoksa boş listelerle başla
+            self.saved_images = []
+            self.liked_images = []
+        except Exception as e:
+            print("Veri yüklenirken hata:", e)
+            self.saved_images = []
+            self.liked_images = []
+
+    def save_data(self):
+        data = {
+            "saved_images": self.saved_images,
+            "liked_images": self.liked_images
+        }
+        try:
+            with open("user_data.json", "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+        except Exception as e:
+            print("Veri kaydedilirken hata:", e)
 
     def switch_screen(self, screen_widget):
         self.setCurrentWidget(screen_widget)
-
-    def open_gallery(self):
-        emotion_text = self.emotion_input.text()
-        if not emotion_text.strip():
-            QMessageBox.warning(self, "Uyarı", "Lütfen bir duygu durumu girin.")
-
-            return
-
-        self.main_window.open_gallery(emotion_text.strip())
-
 
 if __name__ == "__main__":
     import sys

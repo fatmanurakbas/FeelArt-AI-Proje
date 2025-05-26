@@ -11,23 +11,21 @@ class GalleryScreen(QtWidgets.QWidget):
         self.main_window = main_window
         self.emotion = emotion_text
         self.images = []
-        self.saved_images = []
-        self.liked_images = []
 
         self.init_ui()
         self.fetch_images()
-
-
 
     def init_ui(self):
         self.setFixedSize(420, 560)
         current_dir = os.path.dirname(os.path.abspath(__file__))
         bg_path = os.path.join(current_dir, "FeelArt.png")
 
+        # Arka plan
         self.bg_label = QtWidgets.QLabel(self)
         self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
         self.bg_label.setGeometry(0, 0, 420, 560)
 
+        # Yarı saydam container
         self.container = QtWidgets.QWidget(self)
         self.container.setGeometry(15, 15, 390, 530)
         self.container.setStyleSheet("background-color: rgba(255,255,255,200); border-radius: 20px;")
@@ -36,6 +34,7 @@ class GalleryScreen(QtWidgets.QWidget):
         layout.setContentsMargins(15, 15, 15, 15)
         layout.setSpacing(10)
 
+        # Üst bar
         top_bar = QtWidgets.QHBoxLayout()
         back_btn = QtWidgets.QPushButton("←")
         back_btn.setStyleSheet("background-color: transparent; border: none; font: bold 16px; color: #b4462b;")
@@ -49,6 +48,7 @@ class GalleryScreen(QtWidgets.QWidget):
         top_bar.addStretch()
         layout.addLayout(top_bar)
 
+        # Scroll alanı
         self.scroll_area = QtWidgets.QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         scroll_content = QtWidgets.QWidget()
@@ -65,7 +65,6 @@ class GalleryScreen(QtWidgets.QWidget):
             response = requests.get(
                 "http://127.0.0.1:8000/api/images",
                 params={"query": self.emotion, "seed": str(uuid.uuid4())}
-
             )
             if response.status_code == 200:
                 data = response.json()
@@ -87,6 +86,8 @@ class GalleryScreen(QtWidgets.QWidget):
             container = QtWidgets.QWidget()
             container.setStyleSheet("background-color: #fffbe9; border-radius: 12px;")
             vbox = QtWidgets.QVBoxLayout(container)
+            vbox.setContentsMargins(5, 5, 5, 5)
+            vbox.setSpacing(5)
 
             img_label = QtWidgets.QLabel()
             img_label.setPixmap(pixmap)
@@ -118,29 +119,48 @@ class GalleryScreen(QtWidgets.QWidget):
         self.scroll_layout.addWidget(error_label)
 
     def save_image(self, url):
-        if self.main_window is None:
-            QtWidgets.QMessageBox.warning(self, "Hata", "Ana pencere tanımlı değil.")
-            return
+        try:
+            if not self.main_window:
+                QtWidgets.QMessageBox.warning(self, "Hata", "Ana pencere tanımlı değil!")
+                return
 
-        if url not in self.main_window.saved_images:
-            self.main_window.saved_images.append(url)
-            QtWidgets.QMessageBox.information(self, "Kaydedildi", "Görsel kaydedildi.")
+            if url not in self.main_window.saved_images:
+                self.main_window.saved_images.append(url)
+                QtWidgets.QMessageBox.information(self, "Kaydedildi", "Görsel kaydedildi.")
 
-        # Kaydedilenler ekranı varsa güncelle
-            if hasattr(self.main_window, "bookmarks_screen") and self.main_window.bookmarks_screen:
-                self.main_window.bookmarks_screen.update_saved_images(self.main_window.saved_images)
+                # JSON'a kaydet:
+                self.main_window.save_data()
+
+                # Bookmarks ekranını güncelle
+                if self.main_window.bookmarks_screen:
+                    print("BookmarksScreen güncelleniyor...")
+                    self.main_window.bookmarks_screen.update_saved_images(self.main_window.saved_images)
+                else:
+                    QtWidgets.QMessageBox.warning(self, "Hata", "Bookmarks ekranı tanımlı değil!")
             else:
-                QtWidgets.QMessageBox.warning(self, "Hata", "Bookmarks ekranı tanımlı değil.")
-        else:
-            QtWidgets.QMessageBox.warning(self, "Zaten kaydedilmiş", "Bu görsel zaten kaydedilmiş.")
+                QtWidgets.QMessageBox.information(self, "Zaten kaydedilmiş", "Bu görsel zaten kaydedilmiş.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Hata!", f"Bir hata oluştu:\n{e}")
 
     def like_image(self, url):
-        if self.main_window and hasattr(self.main_window, "liked_images"):
-            if url not in self.main_window.liked_images:
-                self.main_window.liked_images.append(url)
-                QtWidgets.QMessageBox.information(self, "Beğenildi", "Görsel beğenildi.")
-                self.main_window.likes_screen.update_liked_images(self.main_window.liked_images)
+        try:
+            if self.main_window and hasattr(self.main_window, "liked_images"):
+                if url not in self.main_window.liked_images:
+                    self.main_window.liked_images.append(url)
+                    QtWidgets.QMessageBox.information(self, "Beğenildi", "Görsel beğenildi.")
+
+                    # JSON'a kaydet
+                    if hasattr(self.main_window, "save_data"):
+                        self.main_window.save_data()
+
+                    # Likes ekranını güncelle
+                    if hasattr(self.main_window, "likes_screen"):
+                        self.main_window.likes_screen.update_liked_images(self.main_window.liked_images)
+                    else:
+                        QtWidgets.QMessageBox.warning(self, "Hata", "Beğenilenler ekranı tanımlı değil!")
+                else:
+                    QtWidgets.QMessageBox.warning(self, "Zaten beğenilmiş", "Bu görsel zaten beğenilmiş.")
             else:
-                QtWidgets.QMessageBox.warning(self, "Zaten beğenilmiş", "Bu görsel zaten beğenilmiş.")
-        else:
-            QtWidgets.QMessageBox.warning(self, "Hata", "Ana pencere tanımlı değil.")
+                QtWidgets.QMessageBox.warning(self, "Hata", "Ana pencere tanımlı değil!")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Hata!", f"Bir hata oluştu:\n{e}")
