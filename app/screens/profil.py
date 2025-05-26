@@ -34,7 +34,7 @@ class ProfileScreen(QtWidgets.QWidget):
         self.apply_theme()
 
     def init_ui(self):
-        self.setFixedSize(420, 560)
+        self.setFixedSize(420, 700)
         bg_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "../assets/FeelArt.png"))
 
         palette = QtGui.QPalette()
@@ -43,7 +43,7 @@ class ProfileScreen(QtWidgets.QWidget):
         self.setAutoFillBackground(True)
 
         self.container = QtWidgets.QWidget(self)
-        self.container.setGeometry(20, 20, 380, 520)
+        self.container.setGeometry(20, 70, 380, 520)
         self.container.setStyleSheet("background-color: rgba(255, 255, 255, 200); border-radius: 20px;")
 
         layout = QtWidgets.QVBoxLayout(self.container)

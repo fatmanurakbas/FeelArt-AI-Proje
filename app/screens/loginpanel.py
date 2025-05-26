@@ -5,15 +5,15 @@ class LoginPanelScreen(QtWidgets.QWidget):
     def __init__(self, stacked_widget=None):
         super().__init__()
         self.stacked_widget = stacked_widget
-        self.setFixedSize(420, 560)
+        self.setFixedSize(420, 700)
 
         # 🎨 Arka Plan Görseli
         current_dir = os.path.dirname(os.path.abspath(__file__))
         bg_path = os.path.join(current_dir, "FeelArt.png")
 
         self.bg_label = QtWidgets.QLabel(self)
-        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
-        self.bg_label.setGeometry(0, 0, 420, 560)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 700, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 700)
 
         # 🌟 Form Kutusu
         self.form = QtWidgets.QWidget(self)

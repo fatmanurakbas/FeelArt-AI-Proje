@@ -16,7 +16,7 @@ class MainApp(QStackedWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("FeelArt")
-        self.setFixedSize(420, 560)
+        self.setFixedSize(420, 700)
 
         # Ortak veri listeleri
         self.saved_images = []

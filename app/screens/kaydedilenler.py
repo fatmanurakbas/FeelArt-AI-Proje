@@ -16,12 +16,12 @@ class BookmarksScreen(QtWidgets.QWidget):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         bg_path = os.path.join(current_dir, "FeelArt.png")
         self.bg_label = QtWidgets.QLabel(self)
-        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
-        self.bg_label.setGeometry(0, 0, 420, 560)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 700, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 700)
 
         # Yarı saydam container
         self.container = QtWidgets.QWidget(self)
-        self.container.setGeometry(15, 15, 390, 530)
+        self.container.setGeometry(20, 70, 380, 520)
         self.container.setStyleSheet("background-color: rgba(255,255,255,200); border-radius: 20px;")
 
         # Ana düzen

@@ -12,17 +12,17 @@ class MainScreen(QtWidgets.QWidget):
         self.history_labels = []
         
 
-        self.setFixedSize(420, 560)
+        self.setFixedSize(420, 700)
         current_dir = os.path.dirname(os.path.abspath(__file__))
         bg_path = os.path.join(current_dir, "FeelArt.png")
 
         self.bg_label = QtWidgets.QLabel(self)
-        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
-        self.bg_label.setGeometry(0, 0, 420, 560)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 700, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 700)
 
         # Sidebar Frame
         self.sidebar_frame = QtWidgets.QFrame(self)
-        self.sidebar_frame.setGeometry(-200, 0, 200, 560)
+        self.sidebar_frame.setGeometry(-200, 0, 200, 700)
         self.sidebar_frame.setStyleSheet("background-color: rgba(245, 245, 245, 245); border-right: 2px solid #ccc;")
 
         sidebar_layout = QtWidgets.QVBoxLayout(self.sidebar_frame)
@@ -56,7 +56,7 @@ class MainScreen(QtWidgets.QWidget):
 
         # Main container
         self.container = QtWidgets.QWidget(self)
-        self.container.setGeometry(20, 20, 380, 520)
+        self.container.setGeometry(20, 70, 380, 520)
         self.container.setStyleSheet("background-color: rgba(255, 255, 255, 170); border-radius: 20px;")
 
         main_layout = QtWidgets.QVBoxLayout(self.container)
@@ -126,11 +126,11 @@ class MainScreen(QtWidgets.QWidget):
         anim = QtCore.QPropertyAnimation(self.sidebar_frame, b"geometry")
         anim.setDuration(300)
         if self.sidebar_open:
-            anim.setStartValue(QtCore.QRect(0, 0, 200, 560))
-            anim.setEndValue(QtCore.QRect(-200, 0, 200, 560))
+            anim.setStartValue(QtCore.QRect(0, 0, 200, 700))
+            anim.setEndValue(QtCore.QRect(-200, 0, 200, 700))
         else:
-            anim.setStartValue(QtCore.QRect(-200, 0, 200, 560))
-            anim.setEndValue(QtCore.QRect(0, 0, 200, 560))
+            anim.setStartValue(QtCore.QRect(-200, 0, 200, 700))
+            anim.setEndValue(QtCore.QRect(0, 0, 200, 700))
             self.sidebar_frame.raise_()  # Kartların üstüne çıkar
         anim.start()
         self.sidebar_open = not self.sidebar_open

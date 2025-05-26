@@ -9,7 +9,7 @@ class SignupScreen(QtWidgets.QWidget):
         super().__init__()
         self.stacked_widget = stacked_widget
         self.setWindowTitle("FeelArt | Kayıt Ol")
-        self.setFixedSize(420, 560)
+        self.setFixedSize(420, 700)
 
         current_dir = os.path.dirname(os.path.abspath(__file__))
         bg_path = os.path.join(current_dir, "FeelArt.png")
@@ -19,8 +19,8 @@ class SignupScreen(QtWidgets.QWidget):
             sys.exit()
 
         self.bg_label = QtWidgets.QLabel(self)
-        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 560, QtCore.Qt.KeepAspectRatioByExpanding))
-        self.bg_label.setGeometry(0, 0, 420, 560)
+        self.bg_label.setPixmap(QtGui.QPixmap(bg_path).scaled(420, 700, QtCore.Qt.KeepAspectRatioByExpanding))
+        self.bg_label.setGeometry(0, 0, 420, 700)
 
         self.form = QtWidgets.QWidget(self)
         self.form.setGeometry(40, 100, 340, 380)
